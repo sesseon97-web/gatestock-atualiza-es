@@ -1,0 +1,55 @@
+{
+  "name": "StockOrder",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "retirada",
+        "devolu\u00e7\u00e3o"
+      ],
+      "description": "Tipo do pedido"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "confirmado",
+        "cancelado"
+      ],
+      "default": "pendente",
+      "description": "Status do pedido"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "ID do produto"
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Nome do produto"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Quantidade"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora da confirma\u00e7\u00e3o"
+    },
+    "door_opened": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a porta foi aberta"
+    }
+  },
+  "required": [
+    "type",
+    "product_id",
+    "quantity"
+  ]
+}
