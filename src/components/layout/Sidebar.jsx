@@ -24,15 +24,13 @@ export default function Sidebar({ open, onClose }) {
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center">
-              <Package className="w-5 h-5 text-sidebar-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">Estoque</h1>
-              <p className="text-xs text-sidebar-foreground/50">Controle</p>
-            </div>
+        <div className="p-5 flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <img
+              src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/9856a3203_generated_image.png"
+              alt="ADIFER Ferramentas"
+              className="h-12 w-auto object-contain brightness-0 invert"
+            />
           </div>
           <button onClick={onClose} className="lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground">
             <X className="w-5 h-5" />
@@ -62,9 +60,9 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         <div className="p-4">
-          <div className="rounded-xl bg-sidebar-accent p-4">
-            <p className="text-xs text-sidebar-foreground/50 mb-1">Sistema de</p>
-            <p className="text-sm font-semibold text-sidebar-foreground">Controle de Estoque</p>
+          <div className="rounded-xl bg-sidebar-accent p-4 text-center">
+            <p className="text-xs text-sidebar-foreground/40">ADIFER Ferramentas</p>
+            <p className="text-xs text-sidebar-foreground/30 mt-0.5">Controle de Estoque</p>
           </div>
         </div>
       </aside>

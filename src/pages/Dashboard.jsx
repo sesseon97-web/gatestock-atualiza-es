@@ -1,6 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Package, ClipboardList, AlertTriangle, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Package, ClipboardList, AlertTriangle, ArrowDownRight, ArrowUpRight, MapPin, Tag } from "lucide-react";
 import StatsCard from "@/components/stock/StatsCard";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -21,18 +21,19 @@ export default function Dashboard() {
   const totalProducts = products.length;
   const lowStock = products.filter((p) => (p.quantity || 0) <= (p.min_quantity || 5)).length;
   const pendingOrders = orders.filter((o) => o.status === "pendente").length;
-  const recentOrders = orders.slice(0, 8);
+  const recentOrders = orders.slice(0, 5);
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Painel</h1>
-          <p className="text-muted-foreground mt-1">Visão geral do estoque</p>
+          <p className="text-muted-foreground mt-1">Bem-vindo ao controle de estoque ADIFER</p>
         </div>
         <div className="flex gap-3">
           <Link to="/novo-pedido">
-            <Button className="rounded-xl gap-2 bg-primary">
+            <Button className="rounded-xl gap-2 bg-primary shadow-lg shadow-primary/20">
               <ArrowDownRight className="w-4 h-4" /> Retirar
             </Button>
           </Link>
@@ -44,6 +45,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard title="Total de Produtos" value={totalProducts} icon={Package} accent="primary" />
         <StatsCard title="Estoque Baixo" value={lowStock} icon={AlertTriangle} accent="destructive" />
@@ -51,7 +53,7 @@ export default function Dashboard() {
         <StatsCard title="Total de Pedidos" value={orders.length} icon={ClipboardList} accent="success" />
       </div>
 
-      {/* Low stock alerts */}
+      {/* Low stock alert */}
       {lowStock > 0 && (
         <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
@@ -70,15 +72,83 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent orders */}
-      <div className="bg-card rounded-2xl border border-border">
-        <div className="p-5 border-b border-border flex items-center justify-between">
-          <h3 className="font-semibold text-foreground">Últimos Pedidos</h3>
-          <Link to="/pedidos" className="text-sm text-primary hover:underline">Ver todos</Link>
+      {/* Products grid */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-foreground">Produtos em Estoque</h2>
+          <Link to="/produtos" className="text-sm text-primary hover:underline font-medium">
+            Gerenciar →
+          </Link>
         </div>
-        {recentOrders.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">Nenhum pedido ainda</div>
+        {products.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground bg-card rounded-2xl border border-border">
+            <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            Nenhum produto cadastrado
+          </div>
         ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {products.map((product) => {
+              const isLow = (product.quantity || 0) <= (product.min_quantity || 5);
+              return (
+                <div
+                  key={product.id}
+                  className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                >
+                  {/* Icon + category */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Package className="w-5 h-5 text-primary" />
+                    </div>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      <Tag className="w-3 h-3" />
+                      {product.category || "Outros"}
+                    </Badge>
+                  </div>
+
+                  {/* Name & code */}
+                  <h3 className="font-semibold text-foreground leading-tight">{product.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Cód: {product.code}</p>
+
+                  {/* Location */}
+                  {product.location && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {product.location}
+                    </p>
+                  )}
+
+                  {/* Quantity */}
+                  <div className="mt-4 flex items-end justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Quantidade</p>
+                      <p className={`text-2xl font-bold ${isLow ? "text-destructive" : "text-foreground"}`}>
+                        {product.quantity || 0}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground pb-0.5">{product.unit || "unidade"}</p>
+                  </div>
+
+                  {isLow && (
+                    <div className="mt-3 px-3 py-1.5 rounded-lg bg-destructive/5 border border-destructive/15 text-xs text-destructive font-medium text-center">
+                      ⚠ Estoque baixo
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Recent orders */}
+      {recentOrders.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border">
+          <div className="p-5 border-b border-border flex items-center justify-between">
+            <h3 className="font-semibold text-foreground">Últimos Pedidos</h3>
+            <Link to="/pedidos" className="text-sm text-primary hover:underline">Ver todos</Link>
+          </div>
           <div className="divide-y divide-border">
             {recentOrders.map((order) => (
               <div key={order.id} className="px-5 py-4 flex items-center justify-between">
@@ -109,8 +179,8 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
