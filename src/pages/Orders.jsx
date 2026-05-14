@@ -53,14 +53,21 @@ export default function Orders() {
                     : <ArrowUpRight className="w-5 h-5 text-green-600" />}
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{order.product_name}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-medium text-foreground">{order.product_name}</p>
+                    {order.order_number && (
+                      <Badge variant="outline" className="text-xs font-mono">{order.order_number}</Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {order.quantity}x · {format(new Date(order.created_date), "dd/MM/yyyy HH:mm")}
                   </p>
+                  {order.client_name && (
+                    <p className="text-xs text-muted-foreground">cliente: {order.client_name}</p>
+                  )}
                   {order.notes && (
                     <p className="text-xs text-muted-foreground mt-0.5 italic">"{order.notes}"</p>
                   )}
-                  <p className="text-xs text-muted-foreground">por {order.created_by}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

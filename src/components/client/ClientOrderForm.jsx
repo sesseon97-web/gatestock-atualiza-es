@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Package } from "lucide-react";
+import { generateOrderNumber } from "@/lib/orderNumber";
 
 export default function ClientOrderForm({ allocation, client, onOrderCreated, onCancel }) {
   const stock = allocation.product?.quantity || 0;
@@ -21,6 +22,7 @@ export default function ClientOrderForm({ allocation, client, onOrderCreated, on
   const handleSubmit = (e) => {
     e.preventDefault();
     mutation.mutate({
+      order_number: generateOrderNumber(),
       type: "retirada",
       product_id: allocation.product_id,
       product_name: allocation.product_name,
