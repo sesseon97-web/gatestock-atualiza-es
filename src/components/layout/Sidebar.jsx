@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Package, ClipboardList, Plus, RotateCcw, X } from "lucide-react";
+import { LayoutDashboard, Package, ClipboardList, Plus, RotateCcw, X, Users, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { base44 } from "@/api/base44Client";
 
 const navItems = [
   { path: "/", label: "Painel", icon: LayoutDashboard },
   { path: "/produtos", label: "Produtos", icon: Package },
+  { path: "/clientes", label: "Clientes", icon: Users },
   { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
   { path: "/novo-pedido", label: "Nova Retirada", icon: Plus },
   { path: "/devolucao", label: "Devolução", icon: RotateCcw },
@@ -59,10 +61,17 @@ export default function Sidebar({ open, onClose }) {
           })}
         </nav>
 
-        <div className="p-4">
-          <div className="rounded-xl bg-sidebar-accent p-4 text-center">
+        <div className="p-4 space-y-2">
+          <button
+            onClick={() => base44.auth.logout()}
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
+          <div className="rounded-xl bg-sidebar-accent p-3 text-center">
             <p className="text-xs text-sidebar-foreground/40">ADIFER Ferramentas</p>
-            <p className="text-xs text-sidebar-foreground/30 mt-0.5">Controle de Estoque</p>
+            <p className="text-xs text-sidebar-foreground/30 mt-0.5">Admin</p>
           </div>
         </div>
       </aside>

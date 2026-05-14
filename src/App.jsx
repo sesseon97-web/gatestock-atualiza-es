@@ -11,14 +11,17 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import AppLayout from '@/components/layout/AppLayout';
+import ClientLayout from '@/components/layout/ClientLayout';
 import Dashboard from '@/pages/Dashboard';
 import Products from '@/pages/Products';
 import NewOrder from '@/pages/NewOrder';
 import ReturnOrder from '@/pages/ReturnOrder';
 import Orders from '@/pages/Orders';
+import Clients from '@/pages/admin/Clients';
+import ClientDashboard from '@/pages/client/ClientDashboard';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -37,21 +40,35 @@ const AuthenticatedApp = () => {
     }
   }
 
+  const isAdmin = user?.role === "admin";
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/produtos" element={<Products />} />
-          <Route path="/novo-pedido" element={<NewOrder />} />
-          <Route path="/devolucao" element={<ReturnOrder />} />
-          <Route path="/pedidos" element={<Orders />} />
-        </Route>
+        {/* Admin routes */}
+        {isAdmin ? (
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/produtos" element={<Products />} />
+            <Route path="/clientes" element={<Clients />} />
+            <Route path="/pedidos" element={<Orders />} />
+            <Route path="/novo-pedido" element={<NewOrder />} />
+            <Route path="/devolucao" element={<ReturnOrder />} />
+          </Route>
+        ) : (
+          /* Client routes */
+          <Route element={<ClientLayout />}>
+            <Route path="/" element={<ClientDashboard />} />
+            <Route path="/pedidos" element={<Orders />} />
+          </Route>
+        )}
       </Route>
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

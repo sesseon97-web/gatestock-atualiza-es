@@ -45,6 +45,14 @@
       "type": "boolean",
       "default": false,
       "description": "Se a porta foi aberta"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID do cliente que fez o pedido"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nome do cliente"
     }
   },
   "required": [

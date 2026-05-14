@@ -1,0 +1,32 @@
+{
+  "name": "ClientAllocation",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "ID do cliente"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "ID do produto"
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Nome do produto"
+    },
+    "allocated_quantity": {
+      "type": "number",
+      "default": 0,
+      "description": "Quantidade alocada para o cliente"
+    }
+  },
+  "required": [
+    "client_id",
+    "product_id",
+    "allocated_quantity"
+  ]
+}

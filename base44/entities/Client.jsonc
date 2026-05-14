@@ -1,0 +1,43 @@
+{
+  "name": "Client",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do cliente"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email de login do cliente (deve ser o mesmo email cadastrado como usu\u00e1rio)"
+    },
+    "company": {
+      "type": "string",
+      "description": "Empresa ou setor do cliente"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "Endere\u00e7o IP ou URL para acionar a porta/atuador do cliente"
+    },
+    "ip_port": {
+      "type": "string",
+      "description": "Porta do IP (ex: 8080)"
+    },
+    "ip_endpoint": {
+      "type": "string",
+      "description": "Endpoint do IP (ex: /open ou /trigger)"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Cliente ativo"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es sobre o cliente"
+    }
+  },
+  "required": [
+    "name",
+    "email"
+  ]
+}
