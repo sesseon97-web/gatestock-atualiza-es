@@ -12,7 +12,7 @@ import { Wifi, Eye, EyeOff, UserPlus } from "lucide-react";
 export default function ClientForm({ client, onClose }) {
   const queryClient = useQueryClient();
   const nameToEmail = (name) =>
-    name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
+    name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
 
   const [form, setForm] = useState({
     name: client?.name || "",

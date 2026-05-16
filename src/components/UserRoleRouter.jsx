@@ -6,7 +6,7 @@ import ClientLayout from "@/components/layout/ClientLayout";
 import EmployeeLayout from "@/components/layout/EmployeeLayout";
 
 const nameToEmail = (name) =>
-  name?.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
+  name?.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
 
 /**
  * Detecta se o usuário logado (não admin) é um Cliente ou Funcionário

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Lock, Mail, User } from "lucide-react";
 
 const nameToEmail = (name) =>
-  name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
+  name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
 
 export default function Login() {
   const [loginValue, setLoginValue] = useState("");

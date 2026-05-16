@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const nameToEmail = (name) =>
-  name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
+  name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
 
 // Senha padrão sem necessidade de o funcionário configurar
 const DEFAULT_PASSWORD = "funcionario@adifer";
@@ -74,7 +74,7 @@ export default function EmployeeForm({ client, onClose }) {
 
       <div className="rounded-xl bg-muted/40 border border-border p-3 text-xs text-muted-foreground space-y-1">
         <p>O funcionário acessa o sistema com:</p>
-        <p>• <strong>Login:</strong> {name.trim() ? nameToEmail(name) : "nome.gerado@adifer.local"}</p>
+        <p>• <strong>Login:</strong> {name.trim() ? nameToEmail(name) : "nome.gerado@adifer-app.com"}</p>
         <p>• <strong>Senha:</strong> <span className="font-mono">{DEFAULT_PASSWORD}</span></p>
         <p className="text-amber-600">O funcionário pode trocar a senha após o primeiro acesso.</p>
       </div>
