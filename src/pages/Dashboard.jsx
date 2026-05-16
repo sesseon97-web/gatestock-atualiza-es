@@ -20,7 +20,6 @@ export default function Dashboard() {
 
   const totalProducts = products.length;
   const lowStock = products.filter((p) => (p.quantity || 0) <= (p.min_quantity || 5)).length;
-  const pendingOrders = orders.filter((o) => o.status === "pendente").length;
   const recentOrders = orders.slice(0, 5);
 
   return (
@@ -49,7 +48,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard title="Total de Produtos" value={totalProducts} icon={Package} accent="primary" />
         <StatsCard title="Estoque Baixo" value={lowStock} icon={AlertTriangle} accent="destructive" />
-        <StatsCard title="Pedidos Pendentes" value={pendingOrders} icon={ClipboardList} accent="accent" />
         <StatsCard title="Total de Pedidos" value={orders.length} icon={ClipboardList} accent="success" />
       </div>
 
