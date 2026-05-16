@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Wifi } from "lucide-react";
+import { Wifi, Eye, EyeOff, UserPlus } from "lucide-react";
 
 export default function ClientForm({ client, onClose }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     name: client?.name || "",
     email: client?.email || "",
+    password: "",
     company: client?.company || "",
     ip_address: client?.ip_address || "",
     ip_port: client?.ip_port || "",
@@ -21,23 +22,48 @@ export default function ClientForm({ client, onClose }) {
     active: client?.active ?? true,
     notes: client?.notes || "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const mutation = useMutation({
-    mutationFn: (data) =>
-      client
-        ? base44.entities.Client.update(client.id, data)
-        : base44.entities.Client.create(data),
+    mutationFn: async (data) => {
+      const { password, ...clientData } = data;
+      if (client) {
+        return base44.entities.Client.update(client.id, clientData);
+      } else {
+        // Cria o acesso (convite + senha) e o registro do cliente
+        await base44.auth.register({ email: clientData.email, password });
+        return base44.entities.Client.create(clientData);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast.success(client ? "Cliente atualizado!" : "Cliente criado!");
+      toast.success(client ? "Cliente atualizado!" : "Cliente criado com acesso ao sistema!");
       onClose();
+    },
+    onError: (err) => {
+      const msg = err?.message || "";
+      if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("exist")) {
+        // Usuário já existe, apenas cria o registro do cliente
+        const { password, ...clientData } = form;
+        base44.entities.Client.create(clientData).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+          toast.success("Cliente criado! (usuário já possuía acesso ao sistema)");
+          onClose();
+        });
+      } else {
+        toast.error("Erro ao criar cliente: " + msg);
+      }
     },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!client && !form.password) {
+      toast.error("Informe a senha de acesso do cliente.");
+      return;
+    }
     mutation.mutate(form);
   };
 
@@ -58,10 +84,39 @@ export default function ClientForm({ client, onClose }) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label>Email de Login *</Label>
-        <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required className="rounded-xl" placeholder="mesmo email do usuário no sistema" />
-        <p className="text-xs text-muted-foreground">Deve ser o mesmo email cadastrado como usuário no sistema.</p>
+      <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
+        <div className="flex items-center gap-2 mb-1">
+          <UserPlus className="w-4 h-4 text-primary" />
+          <span className="font-medium text-sm">Acesso ao Sistema</span>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Email de Login *</Label>
+          <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required className="rounded-xl" placeholder="email@exemplo.com" disabled={!!client} />
+          {client && <p className="text-xs text-muted-foreground">O email não pode ser alterado após o cadastro.</p>}
+        </div>
+        {!client && (
+          <div className="space-y-1.5">
+            <Label>Senha de Acesso *</Label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) => set("password", e.target.value)}
+                required
+                className="rounded-xl pr-10"
+                placeholder="Senha para o cliente acessar o sistema"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">O cliente usará este email e senha para acessar o dashboard.</p>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
