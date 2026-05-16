@@ -1,96 +1,62 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { DoorOpen, Check, Loader2, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Check, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
+// Auto-confirms the order immediately (no pending state)
 export default function DoorConfirmation({ order, onConfirmed }) {
-  const [step, setStep] = useState("idle"); // idle | opening | opened
+  const [step, setStep] = useState("confirming"); // confirming | done
 
-  const handleConfirm = async () => {
-    setStep("opening");
+  useEffect(() => {
+    const confirm = async () => {
+      await base44.entities.StockOrder.update(order.id, {
+        status: "confirmado",
+        door_opened: false,
+        confirmed_at: new Date().toISOString(),
+      });
 
-    // Atualiza o pedido como confirmado e porta aberta
-    await base44.entities.StockOrder.update(order.id, {
-      status: "confirmado",
-      door_opened: true,
-      confirmed_at: new Date().toISOString(),
-    });
+      const products = await base44.entities.Product.filter({ id: order.product_id });
+      if (products.length > 0) {
+        const product = products[0];
+        const newQty = order.type === "retirada"
+          ? Math.max(0, (product.quantity || 0) - order.quantity)
+          : (product.quantity || 0) + order.quantity;
+        await base44.entities.Product.update(product.id, { quantity: newQty });
+      }
 
-    // Atualiza o estoque do produto
-    const products = await base44.entities.Product.filter({ id: order.product_id });
-    if (products.length > 0) {
-      const product = products[0];
-      const newQty = order.type === "retirada"
-        ? Math.max(0, (product.quantity || 0) - order.quantity)
-        : (product.quantity || 0) + order.quantity;
-      await base44.entities.Product.update(product.id, { quantity: newQty });
-    }
+      setStep("done");
+      toast.success(order.type === "retirada" ? "Retirada confirmada!" : "Devolução confirmada!");
+      setTimeout(() => onConfirmed?.(), 1800);
+    };
 
-    setStep("opened");
-    toast.success(order.type === "retirada" ? "Retirada confirmada!" : "Devolução confirmada!");
-
-    setTimeout(() => {
-      onConfirmed?.();
-    }, 2500);
-  };
+    confirm();
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center py-8">
+    <div className="flex flex-col items-center justify-center py-10">
       <AnimatePresence mode="wait">
-        {step === "idle" && (
+        {step === "confirming" && (
           <motion.div
-            key="idle"
+            key="confirming"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center gap-6"
+            className="flex flex-col items-center gap-5"
           >
             <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center">
-              <Lock className="w-12 h-12 text-primary" />
+              <Loader2 className="w-12 h-12 text-primary animate-spin" />
             </div>
-            <div className="text-center">
-              <h3 className="text-xl font-bold text-foreground">Confirmar e Abrir Porta</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {order.type === "retirada"
-                  ? `Retirar ${order.quantity}x ${order.product_name}`
-                  : `Devolver ${order.quantity}x ${order.product_name}`}
-              </p>
-            </div>
-            <Button
-              size="lg"
-              onClick={handleConfirm}
-              className="h-16 px-10 text-lg font-bold rounded-2xl bg-primary hover:bg-primary/90 shadow-xl shadow-primary/25 gap-3"
-            >
-              <DoorOpen className="w-6 h-6" />
-              Confirmar e Abrir Porta
-            </Button>
+            <p className="text-lg font-semibold text-foreground">Confirmando pedido...</p>
           </motion.div>
         )}
 
-        {step === "opening" && (
+        {step === "done" && (
           <motion.div
-            key="opening"
+            key="done"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center gap-6"
-          >
-            <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center">
-              <Loader2 className="w-12 h-12 text-accent animate-spin" />
-            </div>
-            <p className="text-lg font-semibold text-foreground">Abrindo porta...</p>
-          </motion.div>
-        )}
-
-        {step === "opened" && (
-          <motion.div
-            key="opened"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center gap-6"
+            className="flex flex-col items-center gap-5"
           >
             <motion.div
               initial={{ scale: 0 }}
@@ -101,8 +67,12 @@ export default function DoorConfirmation({ order, onConfirmed }) {
               <Check className="w-12 h-12 text-green-600" />
             </motion.div>
             <div className="text-center">
-              <p className="text-lg font-bold text-green-600">Porta Aberta!</p>
-              <p className="text-sm text-muted-foreground mt-1">Operação concluída com sucesso</p>
+              <p className="text-xl font-bold text-green-600">Pedido Confirmado!</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {order.type === "retirada"
+                  ? `${order.quantity}x ${order.product_name} retirado`
+                  : `${order.quantity}x ${order.product_name} devolvido`}
+              </p>
             </div>
           </motion.div>
         )}
