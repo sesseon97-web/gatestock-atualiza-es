@@ -39,7 +39,15 @@ export default function ClientForm({ client, onClose }) {
       if (client) {
         return base44.entities.Client.update(client.id, clientData);
       } else {
-        await base44.auth.register({ email: clientData.email, password });
+        // Tenta registrar o usuário; ignora erro se já existir
+        try {
+          await base44.auth.register({ email: clientData.email, password });
+        } catch (err) {
+          const msg = (err?.message || "").toLowerCase();
+          if (!msg.includes("already") && !msg.includes("exist") && !msg.includes("registered")) {
+            throw err;
+          }
+        }
         return base44.entities.Client.create(clientData);
       }
     },
@@ -49,17 +57,7 @@ export default function ClientForm({ client, onClose }) {
       onClose();
     },
     onError: (err) => {
-      const msg = err?.message || "";
-      if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("exist")) {
-        const { password, ...clientData } = form;
-        base44.entities.Client.create(clientData).then(() => {
-          queryClient.invalidateQueries({ queryKey: ["clients"] });
-          toast.success("Cliente criado!");
-          onClose();
-        });
-      } else {
-        toast.error("Erro ao criar cliente: " + msg);
-      }
+      toast.error("Erro ao salvar cliente: " + (err?.message || ""));
     },
   });
 
