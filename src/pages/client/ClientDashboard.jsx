@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart } from "lucide-react";
+import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart, Users, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ClientOrderForm from "@/components/client/ClientOrderForm";
 import DoorConfirmationClient from "@/components/client/DoorConfirmationClient";
+import EmployeeForm from "@/components/client/EmployeeForm";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function ClientDashboard() {
@@ -14,6 +15,7 @@ export default function ClientDashboard() {
   const queryClient = useQueryClient();
   const [orderProduct, setOrderProduct] = useState(null);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["my-client", user?.email],
@@ -38,6 +40,17 @@ export default function ClientDashboard() {
     queryKey: ["my-orders", myClient?.email],
     queryFn: () => base44.entities.StockOrder.filter({ created_by: user?.email }, "-created_date", 10),
     enabled: !!user?.email,
+  });
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees", myClient?.id],
+    queryFn: () => base44.entities.Employee.filter({ client_id: myClient?.id }),
+    enabled: !!myClient?.id,
+  });
+
+  const deleteEmployee = useMutation({
+    mutationFn: (id) => base44.entities.Employee.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees", myClient?.id] }),
   });
 
   const enriched = allocations.map((alloc) => {
@@ -185,6 +198,59 @@ export default function ClientDashboard() {
               onOrderCreated={handleOrderCreated}
               onCancel={() => setOrderProduct(null)}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Employees section */}
+      <div className="bg-card rounded-2xl border border-border">
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">Funcionários</h3>
+            <Badge variant="secondary">{employees.length}</Badge>
+          </div>
+          <Button size="sm" className="rounded-xl gap-2" onClick={() => setShowEmployeeForm(true)}>
+            <Plus className="w-4 h-4" /> Cadastrar
+          </Button>
+        </div>
+        {employees.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">
+            Nenhum funcionário cadastrado ainda.
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {employees.map((emp) => {
+              const empEmail = emp.name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
+              return (
+                <div key={emp.id} className="px-5 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{emp.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{empEmail}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive rounded-lg"
+                    onClick={() => deleteEmployee.mutate(emp.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Employee form dialog */}
+      <Dialog open={showEmployeeForm} onOpenChange={setShowEmployeeForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Funcionário</DialogTitle>
+          </DialogHeader>
+          {myClient && (
+            <EmployeeForm client={myClient} onClose={() => setShowEmployeeForm(false)} />
           )}
         </DialogContent>
       </Dialog>

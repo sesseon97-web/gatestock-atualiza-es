@@ -1,0 +1,27 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do funcion\u00e1rio"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID do cliente (empresa) ao qual pertence"
+    },
+    "client_email": {
+      "type": "string",
+      "description": "Email do cliente (para v\u00ednculo)"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Funcion\u00e1rio ativo"
+    }
+  },
+  "required": [
+    "name",
+    "client_id"
+  ]
+}

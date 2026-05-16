@@ -12,6 +12,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import AppLayout from '@/components/layout/AppLayout';
 import ClientLayout from '@/components/layout/ClientLayout';
+import UserRoleRouter from '@/components/UserRoleRouter';
 import Dashboard from '@/pages/Dashboard';
 import Products from '@/pages/Products';
 import NewOrder from '@/pages/NewOrder';
@@ -19,6 +20,7 @@ import ReturnOrder from '@/pages/ReturnOrder';
 import Orders from '@/pages/Orders';
 import Clients from '@/pages/admin/Clients';
 import ClientDashboard from '@/pages/client/ClientDashboard';
+import EmployeeDashboard from '@/pages/employee/EmployeeDashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -61,9 +63,10 @@ const AuthenticatedApp = () => {
             <Route path="/devolucao" element={<ReturnOrder />} />
           </Route>
         ) : (
-          /* Client routes */
-          <Route element={<ClientLayout />}>
+          /* Client / Employee routes — UserRoleRouter detecta qual layout usar */
+          <Route element={<UserRoleRouter />}>
             <Route path="/" element={<ClientDashboard />} />
+            <Route path="/funcionario" element={<EmployeeDashboard />} />
             <Route path="/pedidos" element={<Orders />} />
           </Route>
         )}
