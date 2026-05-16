@@ -3,23 +3,30 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Lock, Mail } from "lucide-react";
+import { Loader2, Lock, Mail, User } from "lucide-react";
+
+const nameToEmail = (name) =>
+  name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [loginValue, setLoginValue] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const isEmail = loginValue.includes("@");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    // Se digitou email direto (admin), usa como está; senão converte nome → email de cliente
+    const email = isEmail ? loginValue : nameToEmail(loginValue);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
       window.location.href = "/";
     } catch (err) {
-      setError("Email ou senha incorretos. Verifique suas credenciais.");
+      setError("Login ou senha incorretos. Verifique suas credenciais.");
     } finally {
       setLoading(false);
     }
@@ -48,17 +55,20 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="login">Login</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                {isEmail
+                  ? <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  : <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                }
                 <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
+                  id="login"
+                  type="text"
+                  autoComplete="username"
                   autoFocus
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Nome ou email"
+                  value={loginValue}
+                  onChange={(e) => setLoginValue(e.target.value)}
                   className="pl-10 h-11 rounded-xl"
                   required
                 />

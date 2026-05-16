@@ -11,6 +11,9 @@ import { Wifi, Eye, EyeOff, UserPlus } from "lucide-react";
 
 export default function ClientForm({ client, onClose }) {
   const queryClient = useQueryClient();
+  const nameToEmail = (name) =>
+    name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
+
   const [form, setForm] = useState({
     name: client?.name || "",
     email: client?.email || "",
@@ -26,13 +29,16 @@ export default function ClientForm({ client, onClose }) {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  const handleNameChange = (name) => {
+    setForm((f) => ({ ...f, name, email: client ? f.email : nameToEmail(name) }));
+  };
+
   const mutation = useMutation({
     mutationFn: async (data) => {
       const { password, ...clientData } = data;
       if (client) {
         return base44.entities.Client.update(client.id, clientData);
       } else {
-        // Cria o acesso (convite + senha) e o registro do cliente
         await base44.auth.register({ email: clientData.email, password });
         return base44.entities.Client.create(clientData);
       }
@@ -45,11 +51,10 @@ export default function ClientForm({ client, onClose }) {
     onError: (err) => {
       const msg = err?.message || "";
       if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("exist")) {
-        // Usuário já existe, apenas cria o registro do cliente
         const { password, ...clientData } = form;
         base44.entities.Client.create(clientData).then(() => {
           queryClient.invalidateQueries({ queryKey: ["clients"] });
-          toast.success("Cliente criado! (usuário já possuía acesso ao sistema)");
+          toast.success("Cliente criado!");
           onClose();
         });
       } else {
@@ -75,8 +80,8 @@ export default function ClientForm({ client, onClose }) {
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Nome *</Label>
-          <Input value={form.name} onChange={(e) => set("name", e.target.value)} required className="rounded-xl" />
+          <Label>Nome * <span className="text-muted-foreground font-normal">(usado como login)</span></Label>
+          <Input value={form.name} onChange={(e) => handleNameChange(e.target.value)} required className="rounded-xl" />
         </div>
         <div className="space-y-1.5">
           <Label>Empresa / Setor</Label>
@@ -89,11 +94,6 @@ export default function ClientForm({ client, onClose }) {
           <UserPlus className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">Acesso ao Sistema</span>
         </div>
-        <div className="space-y-1.5">
-          <Label>Email de Login *</Label>
-          <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required className="rounded-xl" placeholder="email@exemplo.com" disabled={!!client} />
-          {client && <p className="text-xs text-muted-foreground">O email não pode ser alterado após o cadastro.</p>}
-        </div>
         {!client && (
           <div className="space-y-1.5">
             <Label>Senha de Acesso *</Label>
@@ -104,7 +104,7 @@ export default function ClientForm({ client, onClose }) {
                 onChange={(e) => set("password", e.target.value)}
                 required
                 className="rounded-xl pr-10"
-                placeholder="Senha para o cliente acessar o sistema"
+                placeholder="Defina a senha do cliente"
               />
               <button
                 type="button"
@@ -114,8 +114,14 @@ export default function ClientForm({ client, onClose }) {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">O cliente usará este email e senha para acessar o dashboard.</p>
+            <p className="text-xs text-muted-foreground">
+              O cliente acessa com o <strong>Nome</strong> e esta senha.
+              {form.name && <> Login gerado: <span className="font-mono text-primary">{nameToEmail(form.name)}</span></>}
+            </p>
           </div>
+        )}
+        {client && (
+          <p className="text-xs text-muted-foreground">Login do cliente: <span className="font-mono text-primary">{client.name}</span></p>
         )}
       </div>
 
