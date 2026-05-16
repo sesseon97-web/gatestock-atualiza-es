@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Package, Search, Trash2, Pencil } from "lucide-react";
+import { Plus, Package, Search, Trash2, Pencil, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProductForm from "@/components/stock/ProductForm";
+import CategoryManager from "@/components/stock/CategoryManager";
 import { toast } from "sonner";
 
 export default function Products() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [showCategories, setShowCategories] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
@@ -50,9 +52,14 @@ export default function Products() {
           <h1 className="text-3xl font-bold">Produtos</h1>
           <p className="text-muted-foreground mt-1">{products.length} itens cadastrados</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="rounded-xl gap-2">
-          <Plus className="w-4 h-4" /> Novo Produto
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowCategories(true)} className="rounded-xl gap-2">
+            <Tags className="w-4 h-4" /> Categorias
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="rounded-xl gap-2">
+            <Plus className="w-4 h-4" /> Novo Produto
+          </Button>
+        </div>
       </div>
 
       <div className="relative">
@@ -124,6 +131,15 @@ export default function Products() {
             <DialogTitle>{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
           <ProductForm product={editingProduct} onClose={handleClose} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCategories} onOpenChange={setShowCategories}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Categorias</DialogTitle>
+          </DialogHeader>
+          <CategoryManager onClose={() => setShowCategories(false)} />
         </DialogContent>
       </Dialog>
     </div>

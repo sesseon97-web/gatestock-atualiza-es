@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-const CATEGORIES = ["Eletrônicos", "Ferramentas", "Material de Escritório", "Limpeza", "EPI", "Outros"];
 const UNITS = ["unidade", "caixa", "pacote", "litro", "kg"];
 
 export default function ProductForm({ product, onClose }) {
@@ -22,6 +21,13 @@ export default function ProductForm({ product, onClose }) {
   });
 
   const queryClient = useQueryClient();
+
+  const { data: categoriesData = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => base44.entities.Category.list("name"),
+  });
+
+  const categories = categoriesData.map((c) => c.name);
 
   const mutation = useMutation({
     mutationFn: (data) =>
@@ -60,7 +66,8 @@ export default function ProductForm({ product, onClose }) {
           <Select value={form.category} onValueChange={(v) => update("category", v)}>
             <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {categories.length === 0 && <SelectItem value="Outros">Outros</SelectItem>}
+              {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
