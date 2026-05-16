@@ -29,9 +29,9 @@ export default function Sidebar({ open, onClose }) {
         <div className="p-5 flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <img
-              src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/9856a3203_generated_image.png"
+              src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/87d5329a1_LogoADIFERFerramen.png"
               alt="ADIFER Ferramentas"
-              className="h-12 w-auto object-contain brightness-0 invert"
+              className="h-12 w-12 object-cover rounded-full"
             />
           </div>
           <button onClick={onClose} className="lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground">

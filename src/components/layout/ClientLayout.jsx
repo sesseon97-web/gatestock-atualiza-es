@@ -15,9 +15,9 @@ export default function ClientLayout() {
       <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <img
-            src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/9856a3203_generated_image.png"
+            src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/87d5329a1_LogoADIFERFerramen.png"
             alt="ADIFER Ferramentas"
-            className="h-9 w-auto object-contain brightness-0 invert"
+            className="h-9 w-9 object-cover rounded-full"
           />
         </div>
         <div className="flex items-center gap-3">

@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Lock, Mail, Wrench } from "lucide-react";
+import { Loader2, Lock, Mail } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -30,10 +30,11 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo / Branding */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
-            <Wrench className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">ADIFER Ferramentas</h1>
+          <img
+            src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/87d5329a1_LogoADIFERFerramen.png"
+            alt="ADIFER Ferramentas"
+            className="h-24 w-24 object-cover rounded-full mx-auto mb-4 shadow-lg"
+          />
           <p className="text-muted-foreground text-sm mt-1">Controle de Estoque</p>
         </div>
 
