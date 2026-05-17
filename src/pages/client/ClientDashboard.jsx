@@ -126,7 +126,7 @@ export default function ClientDashboard() {
       </div>
 
       {/* Main action cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div className="bg-card rounded-2xl border border-border p-6 flex flex-col items-center text-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
             <ShoppingCart className="w-7 h-7 text-primary" />
