@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart, Plus, Fingerprint, Users, Trash2 } from "lucide-react";
+import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart, Plus, Fingerprint, Users, Trash2, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import DoorConfirmationClient from "@/components/client/DoorConfirmationClient";
 import EmployeeForm from "@/components/client/EmployeeForm";
 import EmployeePinModal from "@/components/client/EmployeePinModal";
 import CartCheckout from "@/components/client/CartCheckout";
+import ClientReturnFlow from "@/components/client/ClientReturnFlow";
 import { useClientSession } from "@/components/layout/ClientLayout";
 
 export default function ClientDashboard() {
@@ -22,6 +23,7 @@ export default function ClientDashboard() {
   const [doorOrderIndex, setDoorOrderIndex] = useState(0);
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [showEmployeeList, setShowEmployeeList] = useState(false);
+  const [showReturn, setShowReturn] = useState(false);
 
   const { data: allocations = [] } = useQuery({
     queryKey: ["my-allocations", myClient?.id],
@@ -123,29 +125,52 @@ export default function ClientDashboard() {
         </Button>
       </div>
 
-      {/* Main action card */}
-      <div className="bg-card rounded-2xl border border-border p-6 flex flex-col items-center text-center gap-5">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <ShoppingCart className="w-8 h-8 text-primary" />
+      {/* Main action cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-card rounded-2xl border border-border p-6 flex flex-col items-center text-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <ShoppingCart className="w-7 h-7 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Nova Retirada</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Funcionário digita o PIN e seleciona produtos
+            </p>
+          </div>
+          <Button
+            size="lg"
+            className="rounded-xl gap-2 w-full"
+            onClick={() => setFlow("pin")}
+            disabled={enriched.filter((a) => Math.min(a.allocated_quantity, a.product?.quantity || 0) > 0).length === 0}
+          >
+            <Fingerprint className="w-5 h-5" />
+            Iniciar
+          </Button>
+          {enriched.length === 0 && (
+            <p className="text-xs text-muted-foreground">Nenhum produto alocado ainda.</p>
+          )}
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Iniciar Retirada</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            O funcionário digita o PIN e você seleciona os produtos desejados
-          </p>
+
+        <div className="bg-card rounded-2xl border border-border p-6 flex flex-col items-center text-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center">
+            <RotateCcw className="w-7 h-7 text-green-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Devolução</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Devolver produtos de retiradas anteriores
+            </p>
+          </div>
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-xl gap-2 w-full border-green-500/30 text-green-700 hover:bg-green-500/10"
+            onClick={() => setShowReturn(true)}
+          >
+            <RotateCcw className="w-5 h-5" />
+            Devolver
+          </Button>
         </div>
-        <Button
-          size="lg"
-          className="rounded-xl gap-2 px-8"
-          onClick={() => setFlow("pin")}
-          disabled={enriched.filter((a) => Math.min(a.allocated_quantity, a.product?.quantity || 0) > 0).length === 0}
-        >
-          <Fingerprint className="w-5 h-5" />
-          Nova Retirada
-        </Button>
-        {enriched.length === 0 && (
-          <p className="text-xs text-muted-foreground">Nenhum produto alocado para o seu perfil ainda.</p>
-        )}
       </div>
 
       {/* Recent orders */}
@@ -273,6 +298,21 @@ export default function ClientDashboard() {
               client={myClient}
               onConfirmed={handleDoorConfirmed}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Return dialog */}
+      <Dialog open={showReturn} onOpenChange={setShowReturn}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-green-600" />
+              Devolução
+            </DialogTitle>
+          </DialogHeader>
+          {showReturn && (
+            <ClientReturnFlow client={myClient} onClose={() => setShowReturn(false)} />
           )}
         </DialogContent>
       </Dialog>
