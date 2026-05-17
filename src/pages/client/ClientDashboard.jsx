@@ -1,29 +1,25 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart, Users, Plus, Trash2 } from "lucide-react";
+import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart, Users, Plus, Trash2, Fingerprint } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ClientOrderForm from "@/components/client/ClientOrderForm";
 import DoorConfirmationClient from "@/components/client/DoorConfirmationClient";
 import EmployeeForm from "@/components/client/EmployeeForm";
-import { useAuth } from "@/lib/AuthContext";
+import EmployeePinModal from "@/components/client/EmployeePinModal";
+import { useClientSession } from "@/components/layout/ClientLayout";
 
 export default function ClientDashboard() {
-  const { user } = useAuth();
+  const myClient = useClientSession();
   const queryClient = useQueryClient();
   const [orderProduct, setOrderProduct] = useState(null);
   const [createdOrder, setCreatedOrder] = useState(null);
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
-
-  const { data: clients = [] } = useQuery({
-    queryKey: ["my-client", user?.email],
-    queryFn: () => base44.entities.Client.filter({ email: user?.email }),
-    enabled: !!user?.email,
-  });
-
-  const myClient = clients[0];
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [identifiedEmployee, setIdentifiedEmployee] = useState(null);
+  const [pendingOrderProduct, setPendingOrderProduct] = useState(null);
 
   const { data: allocations = [] } = useQuery({
     queryKey: ["my-allocations", myClient?.id],
@@ -37,9 +33,9 @@ export default function ClientDashboard() {
   });
 
   const { data: myOrders = [] } = useQuery({
-    queryKey: ["my-orders", myClient?.email],
-    queryFn: () => base44.entities.StockOrder.filter({ created_by: user?.email }, "-created_date", 10),
-    enabled: !!user?.email,
+    queryKey: ["my-orders-client", myClient?.id],
+    queryFn: () => base44.entities.StockOrder.filter({ client_id: myClient?.id }, "-created_date", 10),
+    enabled: !!myClient?.id,
   });
 
   const { data: employees = [] } = useQuery({
@@ -58,6 +54,20 @@ export default function ClientDashboard() {
     return { ...alloc, product };
   });
 
+  // Ao clicar em "Solicitar Retirada", pede PIN do funcionário primeiro
+  const handleRequestOrder = (alloc) => {
+    setPendingOrderProduct(alloc);
+    setIdentifiedEmployee(null);
+    setShowPinModal(true);
+  };
+
+  const handleEmployeeIdentified = (employee) => {
+    setIdentifiedEmployee(employee);
+    setShowPinModal(false);
+    setOrderProduct(pendingOrderProduct);
+    setPendingOrderProduct(null);
+  };
+
   const handleOrderCreated = (order) => {
     setCreatedOrder(order);
     setOrderProduct(null);
@@ -66,6 +76,7 @@ export default function ClientDashboard() {
   const handleConfirmed = () => {
     queryClient.invalidateQueries();
     setCreatedOrder(null);
+    setIdentifiedEmployee(null);
   };
 
   if (!myClient) {
@@ -124,9 +135,7 @@ export default function ClientDashboard() {
                     )}
                   </div>
                   <h3 className="font-semibold text-foreground">{alloc.product_name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {alloc.product?.category || ""}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{alloc.product?.category || ""}</p>
                   <div className="mt-4 flex items-end justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground">Sua cota</p>
@@ -139,7 +148,7 @@ export default function ClientDashboard() {
                   <Button
                     className="w-full mt-4 rounded-xl gap-2"
                     disabled={outOfStock}
-                    onClick={() => setOrderProduct(alloc)}
+                    onClick={() => handleRequestOrder(alloc)}
                   >
                     <ShoppingCart className="w-4 h-4" /> Solicitar Retirada
                   </Button>
@@ -154,7 +163,7 @@ export default function ClientDashboard() {
       {myOrders.length > 0 && (
         <div className="bg-card rounded-2xl border border-border">
           <div className="p-5 border-b border-border">
-            <h3 className="font-semibold">Meus Últimos Pedidos</h3>
+            <h3 className="font-semibold">Últimos Pedidos</h3>
           </div>
           <div className="divide-y divide-border">
             {myOrders.map((order) => (
@@ -169,7 +178,10 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{order.product_name}</p>
-                    <p className="text-xs text-muted-foreground">{order.quantity}x</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.quantity}x
+                      {order.client_name && <span className="ml-1 text-muted-foreground">· {order.client_name}</span>}
+                    </p>
                   </div>
                 </div>
                 <Badge variant="secondary" className={
@@ -184,23 +196,6 @@ export default function ClientDashboard() {
           </div>
         </div>
       )}
-
-      {/* Order form dialog */}
-      <Dialog open={!!orderProduct} onOpenChange={() => setOrderProduct(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Solicitar Retirada</DialogTitle>
-          </DialogHeader>
-          {orderProduct && (
-            <ClientOrderForm
-              allocation={orderProduct}
-              client={myClient}
-              onOrderCreated={handleOrderCreated}
-              onCancel={() => setOrderProduct(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Employees section */}
       <div className="bg-card rounded-2xl border border-border">
@@ -220,28 +215,63 @@ export default function ClientDashboard() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {employees.map((emp) => {
-              const empEmail = emp.name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
-              return (
-                <div key={emp.id} className="px-5 py-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{emp.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{empEmail}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive rounded-lg"
-                    onClick={() => deleteEmployee.mutate(emp.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+            {employees.map((emp) => (
+              <div key={emp.id} className="px-5 py-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{emp.name}</p>
+                  {emp.pin_code && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <Fingerprint className="w-3 h-3" />
+                      PIN: <span className="font-mono tracking-widest">{emp.pin_code}</span>
+                    </p>
+                  )}
                 </div>
-              );
-            })}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive rounded-lg"
+                  onClick={() => deleteEmployee.mutate(emp.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
           </div>
         )}
       </div>
+
+      {/* PIN Modal */}
+      <EmployeePinModal
+        open={showPinModal}
+        onClose={() => { setShowPinModal(false); setPendingOrderProduct(null); }}
+        employees={employees}
+        onEmployeeIdentified={handleEmployeeIdentified}
+      />
+
+      {/* Order form dialog */}
+      <Dialog open={!!orderProduct} onOpenChange={() => setOrderProduct(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Solicitar Retirada
+              {identifiedEmployee && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  · {identifiedEmployee.name}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {orderProduct && (
+            <ClientOrderForm
+              allocation={orderProduct}
+              client={myClient}
+              employee={identifiedEmployee}
+              onOrderCreated={handleOrderCreated}
+              onCancel={() => setOrderProduct(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Employee form dialog */}
       <Dialog open={showEmployeeForm} onOpenChange={setShowEmployeeForm}>

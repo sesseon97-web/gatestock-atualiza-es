@@ -10,6 +10,14 @@
       "type": "string",
       "description": "Email de login do cliente (deve ser o mesmo email cadastrado como usu\u00e1rio)"
     },
+    "app_username": {
+      "type": "string",
+      "description": "Usu\u00e1rio para o segundo login interno do app"
+    },
+    "app_password": {
+      "type": "string",
+      "description": "Senha para o segundo login interno do app (armazenada em texto simples)"
+    },
     "company": {
       "type": "string",
       "description": "Empresa ou setor do cliente"

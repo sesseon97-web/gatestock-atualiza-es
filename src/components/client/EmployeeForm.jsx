@@ -5,35 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
-const nameToEmail = (name) =>
-  name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
-
-// Senha padrão sem necessidade de o funcionário configurar
-const DEFAULT_PASSWORD = "funcionario@adifer";
+import { Fingerprint } from "lucide-react";
 
 export default function EmployeeForm({ client, onClose }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
+  const [pinCode, setPinCode] = useState("");
+
+  const handlePinChange = (v) => {
+    if (/^\d{0,4}$/.test(v)) setPinCode(v);
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const email = nameToEmail(name);
-      // Cria o login do funcionário (sem senha definida pelo usuário)
-      try {
-        await base44.auth.register({ email, password: DEFAULT_PASSWORD });
-      } catch (err) {
-        const msg = err?.message || "";
-        // Ignora se já existir
-        if (!msg.toLowerCase().includes("already") && !msg.toLowerCase().includes("exist")) {
-          throw err;
-        }
-      }
-      // Cria o registro do funcionário
       return base44.entities.Employee.create({
         name,
         client_id: client.id,
         client_email: client.email,
+        pin_code: pinCode,
         active: true,
       });
     },
@@ -50,6 +39,10 @@ export default function EmployeeForm({ client, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (pinCode.length !== 4) {
+      toast.error("O PIN deve ter exatamente 4 dígitos.");
+      return;
+    }
     mutation.mutate();
   };
 
@@ -65,23 +58,34 @@ export default function EmployeeForm({ client, onClose }) {
           className="rounded-xl"
           autoFocus
         />
-        {name.trim() && (
-          <p className="text-xs text-muted-foreground">
-            Login gerado: <span className="font-mono text-primary">{nameToEmail(name)}</span>
-          </p>
-        )}
       </div>
 
-      <div className="rounded-xl bg-muted/40 border border-border p-3 text-xs text-muted-foreground space-y-1">
-        <p>O funcionário acessa o sistema com:</p>
-        <p>• <strong>Login:</strong> {name.trim() ? nameToEmail(name) : "nome.gerado@adifer-app.com"}</p>
-        <p>• <strong>Senha:</strong> <span className="font-mono">{DEFAULT_PASSWORD}</span></p>
-        <p className="text-amber-600">O funcionário pode trocar a senha após o primeiro acesso.</p>
+      <div className="space-y-1.5">
+        <Label className="flex items-center gap-2">
+          <Fingerprint className="w-4 h-4 text-primary" />
+          Código PIN de Acesso * (4 dígitos)
+        </Label>
+        <Input
+          value={pinCode}
+          onChange={(e) => handlePinChange(e.target.value)}
+          required
+          placeholder="Ex: 1234"
+          className="rounded-xl font-mono tracking-widest text-center text-lg"
+          maxLength={4}
+          inputMode="numeric"
+        />
+        <p className="text-xs text-muted-foreground">
+          O funcionário usará este PIN para se identificar antes de cada retirada.
+        </p>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">Cancelar</Button>
-        <Button type="submit" disabled={mutation.isPending || !name.trim()} className="rounded-xl">
+        <Button
+          type="submit"
+          disabled={mutation.isPending || !name.trim() || pinCode.length !== 4}
+          className="rounded-xl"
+        >
           {mutation.isPending ? "Cadastrando..." : "Cadastrar Funcionário"}
         </Button>
       </div>

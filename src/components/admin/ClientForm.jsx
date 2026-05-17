@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Wifi, Eye, EyeOff, UserPlus } from "lucide-react";
+import { Wifi, Eye, EyeOff, UserPlus, KeyRound } from "lucide-react";
 
 export default function ClientForm({ client, onClose }) {
   const queryClient = useQueryClient();
@@ -18,6 +18,8 @@ export default function ClientForm({ client, onClose }) {
     name: client?.name || "",
     email: client?.email || "",
     password: "",
+    app_username: client?.app_username || "",
+    app_password: client?.app_password || "",
     company: client?.company || "",
     ip_address: client?.ip_address || "",
     ip_port: client?.ip_port || "",
@@ -26,6 +28,7 @@ export default function ClientForm({ client, onClose }) {
     notes: client?.notes || "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showAppPassword, setShowAppPassword] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -129,6 +132,47 @@ export default function ClientForm({ client, onClose }) {
             }
           </p>
         </div>
+      </div>
+
+      {/* Credenciais do segundo login interno */}
+      <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
+        <div className="flex items-center gap-2 mb-1">
+          <KeyRound className="w-4 h-4 text-primary" />
+          <span className="font-medium text-sm">Login Interno do Cliente</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Usuário do App</Label>
+            <Input
+              value={form.app_username}
+              onChange={(e) => set("app_username", e.target.value)}
+              placeholder="Ex: empresa_abc"
+              className="rounded-xl"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Senha do App</Label>
+            <div className="relative">
+              <Input
+                type={showAppPassword ? "text" : "password"}
+                value={form.app_password}
+                onChange={(e) => set("app_password", e.target.value)}
+                placeholder="Senha de acesso"
+                className="rounded-xl pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowAppPassword((v) => !v)}
+              >
+                {showAppPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          O cliente usará essas credenciais para acessar o dashboard após o login principal.
+        </p>
       </div>
 
       <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
