@@ -212,13 +212,11 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <Badge variant="secondary" className={
-                  order.status === "confirmado"
-                    ? "bg-green-500/10 text-green-600"
-                    : order.status === "cancelado"
+                  order.status === "cancelado"
                     ? "bg-destructive/10 text-destructive"
-                    : "bg-accent/10 text-accent"
+                    : "bg-green-500/10 text-green-600"
                 }>
-                  {order.status}
+                  {order.status === "cancelado" ? "cancelado" : "confirmado"}
                 </Badge>
               </div>
             ))}
