@@ -12,6 +12,13 @@ import { generateOrderNumber } from "@/lib/orderNumber";
 function ProductSelector({ enriched, cart, onUpdateCart, onNext, onCancel, employee }) {
   const hasItems = Object.values(cart).some((q) => q > 0);
 
+  const categories = ["Todos", ...Array.from(new Set(enriched.map((a) => a.product?.category).filter(Boolean)))];
+  const [selectedCategory, setSelectedCategory] = useState("Todos");
+
+  const visible = selectedCategory === "Todos"
+    ? enriched
+    : enriched.filter((a) => a.product?.category === selectedCategory);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-xl">
@@ -24,10 +31,27 @@ function ProductSelector({ enriched, cart, onUpdateCart, onNext, onCancel, emplo
         </div>
       </div>
 
+      {/* Category filter */}
+      <div className="flex gap-2 flex-wrap">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+              selectedCategory === cat
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-muted-foreground border-border hover:border-primary/50"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       <p className="text-sm text-muted-foreground font-medium">Selecione os produtos e quantidades:</p>
 
-      <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
-        {enriched.map((alloc) => {
+      <div className="space-y-3 max-h-[45vh] overflow-y-auto pr-1">
+        {visible.map((alloc) => {
           const stock = alloc.product?.quantity || 0;
           const available = Math.min(alloc.allocated_quantity, stock);
           const qty = cart[alloc.product_id] || 0;
@@ -149,7 +173,7 @@ function OrderReview({ enriched, cart, notes, onNotesChange, onSubmit, onBack, i
 }
 
 export default function CartCheckout({ enriched, client, employee, onOrdersCreated, onCancel }) {
-  const [step, setStep] = useState(1); // 1 = select, 2 = review
+  const [step, setStep] = useState(1);
   const [cart, setCart] = useState({});
   const [notes, setNotes] = useState("");
   const queryClient = useQueryClient();
@@ -166,7 +190,7 @@ export default function CartCheckout({ enriched, client, employee, onOrdersCreat
             product_name: alloc.product_name,
             quantity: cart[alloc.product_id],
             notes,
-            status: "pendente",
+            status: "confirmado",
             client_id: client.id,
             client_name: client.name,
           })

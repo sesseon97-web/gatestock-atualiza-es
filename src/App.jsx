@@ -21,6 +21,7 @@ import Orders from '@/pages/Orders';
 import Clients from '@/pages/admin/Clients';
 import ClientDashboard from '@/pages/client/ClientDashboard';
 import EmployeeDashboard from '@/pages/employee/EmployeeDashboard';
+import Reports from '@/pages/admin/Reports';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -62,6 +63,7 @@ const AuthenticatedApp = () => {
             <Route path="/pedidos" element={<Orders />} />
             <Route path="/novo-pedido" element={<NewOrder />} />
             <Route path="/devolucao" element={<ReturnOrder />} />
+            <Route path="/relatorios" element={<Reports />} />
           </Route>
         ) : (
           <Route element={<UserRoleRouter />}>
