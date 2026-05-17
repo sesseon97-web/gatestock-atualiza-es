@@ -54,6 +54,7 @@ export default function ClientReturnFlow({ client, onClose }) {
       original_order_id: selectedOrder.id,
       client_id: client.id,
       client_name: client.name,
+      employee_name: selectedOrder.employee_name || "",
     });
   };
 

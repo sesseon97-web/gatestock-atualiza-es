@@ -107,6 +107,11 @@ export default function Reports() {
                     <p className="text-xs text-muted-foreground">
                       {order.client_name || "—"} · {order.quantity}x · {format(new Date(order.created_date), "dd/MM/yyyy HH:mm")}
                     </p>
+                    {order.employee_name && (
+                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <span className="font-medium text-foreground">Funcionário:</span> {order.employee_name}
+                      </p>
+                    )}
                     {order.notes && (
                       <p className="text-xs text-muted-foreground italic mt-0.5">"{order.notes}"</p>
                     )}

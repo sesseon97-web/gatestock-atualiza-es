@@ -193,6 +193,7 @@ export default function CartCheckout({ enriched, client, employee, onOrdersCreat
             status: "confirmado",
             client_id: client.id,
             client_name: client.name,
+            employee_name: employee?.name || "",
           })
         )
       );

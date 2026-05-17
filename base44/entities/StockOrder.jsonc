@@ -58,6 +58,10 @@
       "type": "string",
       "description": "Nome do cliente"
     },
+    "employee_name": {
+      "type": "string",
+      "description": "Nome do funcion\u00e1rio que realizou a opera\u00e7\u00e3o"
+    },
     "original_order_id": {
       "type": "string",
       "description": "ID do pedido de retirada original (para devolu\u00e7\u00f5es)"
