@@ -1,25 +1,27 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart, Users, Plus, Trash2, Fingerprint } from "lucide-react";
+import { Package, ArrowDownRight, ArrowUpRight, ShoppingCart, Plus, Fingerprint, Users, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import ClientOrderForm from "@/components/client/ClientOrderForm";
 import DoorConfirmationClient from "@/components/client/DoorConfirmationClient";
 import EmployeeForm from "@/components/client/EmployeeForm";
 import EmployeePinModal from "@/components/client/EmployeePinModal";
+import CartCheckout from "@/components/client/CartCheckout";
 import { useClientSession } from "@/components/layout/ClientLayout";
 
 export default function ClientDashboard() {
   const myClient = useClientSession();
   const queryClient = useQueryClient();
-  const [orderProduct, setOrderProduct] = useState(null);
-  const [createdOrder, setCreatedOrder] = useState(null);
-  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
+
+  // Flow: null → "pin" → "cart" → "door"
+  const [flow, setFlow] = useState(null);
   const [identifiedEmployee, setIdentifiedEmployee] = useState(null);
-  const [pendingOrderProduct, setPendingOrderProduct] = useState(null);
+  const [createdOrders, setCreatedOrders] = useState([]);
+  const [doorOrderIndex, setDoorOrderIndex] = useState(0);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [showEmployeeList, setShowEmployeeList] = useState(false);
 
   const { data: allocations = [] } = useQuery({
     queryKey: ["my-allocations", myClient?.id],
@@ -54,29 +56,35 @@ export default function ClientDashboard() {
     return { ...alloc, product };
   });
 
-  // Ao clicar em "Solicitar Retirada", pede PIN do funcionário primeiro
-  const handleRequestOrder = (alloc) => {
-    setPendingOrderProduct(alloc);
-    setIdentifiedEmployee(null);
-    setShowPinModal(true);
-  };
-
   const handleEmployeeIdentified = (employee) => {
     setIdentifiedEmployee(employee);
-    setShowPinModal(false);
-    setOrderProduct(pendingOrderProduct);
-    setPendingOrderProduct(null);
+    setFlow("cart");
   };
 
-  const handleOrderCreated = (order) => {
-    setCreatedOrder(order);
-    setOrderProduct(null);
+  const handleOrdersCreated = (orders) => {
+    setCreatedOrders(orders);
+    setDoorOrderIndex(0);
+    setFlow("door");
   };
 
-  const handleConfirmed = () => {
-    queryClient.invalidateQueries();
-    setCreatedOrder(null);
+  const handleDoorConfirmed = () => {
+    // If there are more orders, advance to next
+    if (doorOrderIndex < createdOrders.length - 1) {
+      setDoorOrderIndex((i) => i + 1);
+    } else {
+      queryClient.invalidateQueries();
+      setFlow(null);
+      setIdentifiedEmployee(null);
+      setCreatedOrders([]);
+      setDoorOrderIndex(0);
+    }
+  };
+
+  const resetFlow = () => {
+    setFlow(null);
     setIdentifiedEmployee(null);
+    setCreatedOrders([]);
+    setDoorOrderIndex(0);
   };
 
   if (!myClient) {
@@ -96,66 +104,47 @@ export default function ClientDashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Olá, {myClient.name}!</h1>
-        <p className="text-muted-foreground mt-1">
-          {myClient.company ? `${myClient.company} · ` : ""}Escolha um produto para retirar
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Olá, {myClient.name}!</h1>
+          <p className="text-muted-foreground mt-1">
+            {myClient.company ? `${myClient.company} · ` : ""}Gerencie suas retiradas
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="rounded-xl gap-2 flex-shrink-0"
+          onClick={() => setShowEmployeeForm(true)}
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Cadastrar Funcionário</span>
+          <span className="sm:hidden">Funcionário</span>
+        </Button>
       </div>
 
-      {/* Products available */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Produtos Disponíveis</h2>
-        {enriched.length === 0 ? (
-          <div className="text-center py-12 bg-card rounded-2xl border border-border text-muted-foreground">
-            <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            Nenhum produto disponível para você no momento
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {enriched.map((alloc) => {
-              const stock = alloc.product?.quantity || 0;
-              const available = Math.min(alloc.allocated_quantity, stock);
-              const outOfStock = available <= 0;
-              return (
-                <div
-                  key={alloc.id}
-                  className={`bg-card rounded-2xl border p-5 transition-all duration-200 ${
-                    outOfStock ? "opacity-60 border-border" : "border-border hover:shadow-lg hover:-translate-y-0.5"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Package className="w-5 h-5 text-primary" />
-                    </div>
-                    {outOfStock ? (
-                      <Badge variant="secondary" className="text-xs text-destructive bg-destructive/10">Sem estoque</Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs text-green-600 bg-green-500/10">Disponível</Badge>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-foreground">{alloc.product_name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">{alloc.product?.category || ""}</p>
-                  <div className="mt-4 flex items-end justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Sua cota</p>
-                      <p className={`text-3xl font-bold ${outOfStock ? "text-muted-foreground" : "text-foreground"}`}>
-                        {available}
-                      </p>
-                    </div>
-                    <p className="text-xs text-muted-foreground pb-0.5">{alloc.product?.unit || "unidade"}</p>
-                  </div>
-                  <Button
-                    className="w-full mt-4 rounded-xl gap-2"
-                    disabled={outOfStock}
-                    onClick={() => handleRequestOrder(alloc)}
-                  >
-                    <ShoppingCart className="w-4 h-4" /> Solicitar Retirada
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
+      {/* Main action card */}
+      <div className="bg-card rounded-2xl border border-border p-6 flex flex-col items-center text-center gap-5">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <ShoppingCart className="w-8 h-8 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Iniciar Retirada</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            O funcionário digita o PIN e você seleciona os produtos desejados
+          </p>
+        </div>
+        <Button
+          size="lg"
+          className="rounded-xl gap-2 px-8"
+          onClick={() => setFlow("pin")}
+          disabled={enriched.filter((a) => Math.min(a.allocated_quantity, a.product?.quantity || 0) > 0).length === 0}
+        >
+          <Fingerprint className="w-5 h-5" />
+          Nova Retirada
+        </Button>
+        {enriched.length === 0 && (
+          <p className="text-xs text-muted-foreground">Nenhum produto alocado para o seu perfil ainda.</p>
         )}
       </div>
 
@@ -178,10 +167,7 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{order.product_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {order.quantity}x
-                      {order.client_name && <span className="ml-1 text-muted-foreground">· {order.client_name}</span>}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{order.quantity}x</p>
                   </div>
                 </div>
                 <Badge variant="secondary" className={
@@ -197,77 +183,95 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      {/* Employees section */}
-      <div className="bg-card rounded-2xl border border-border">
-        <div className="p-5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">Funcionários</h3>
-            <Badge variant="secondary">{employees.length}</Badge>
-          </div>
-          <Button size="sm" className="rounded-xl gap-2" onClick={() => setShowEmployeeForm(true)}>
-            <Plus className="w-4 h-4" /> Cadastrar
-          </Button>
-        </div>
-        {employees.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">
-            Nenhum funcionário cadastrado ainda.
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {employees.map((emp) => (
-              <div key={emp.id} className="px-5 py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{emp.name}</p>
-                  {emp.pin_code && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <Fingerprint className="w-3 h-3" />
-                      PIN: <span className="font-mono tracking-widest">{emp.pin_code}</span>
-                    </p>
-                  )}
+      {/* Employees list */}
+      {employees.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border">
+          <button
+            className="w-full p-5 flex items-center justify-between"
+            onClick={() => setShowEmployeeList((v) => !v)}
+          >
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <span className="font-semibold">Funcionários</span>
+              <Badge variant="secondary">{employees.length}</Badge>
+            </div>
+            <span className="text-xs text-muted-foreground">{showEmployeeList ? "Ocultar" : "Ver todos"}</span>
+          </button>
+          {showEmployeeList && (
+            <div className="border-t border-border divide-y divide-border">
+              {employees.map((emp) => (
+                <div key={emp.id} className="px-5 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{emp.name}</p>
+                    {emp.pin_code && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Fingerprint className="w-3 h-3" />
+                        PIN: <span className="font-mono tracking-widest">{emp.pin_code}</span>
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive rounded-lg"
+                    onClick={() => deleteEmployee.mutate(emp.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-destructive rounded-lg"
-                  onClick={() => deleteEmployee.mutate(emp.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* PIN Modal */}
       <EmployeePinModal
-        open={showPinModal}
-        onClose={() => { setShowPinModal(false); setPendingOrderProduct(null); }}
+        open={flow === "pin"}
+        onClose={resetFlow}
         employees={employees}
         onEmployeeIdentified={handleEmployeeIdentified}
       />
 
-      {/* Order form dialog */}
-      <Dialog open={!!orderProduct} onOpenChange={() => setOrderProduct(null)}>
+      {/* Cart + Checkout Dialog */}
+      <Dialog open={flow === "cart"} onOpenChange={resetFlow}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-primary" />
+              Nova Retirada
+            </DialogTitle>
+          </DialogHeader>
+          {flow === "cart" && (
+            <CartCheckout
+              enriched={enriched}
+              client={myClient}
+              employee={identifiedEmployee}
+              onOrdersCreated={handleOrdersCreated}
+              onCancel={resetFlow}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Door confirmation dialog — one per order */}
+      <Dialog open={flow === "door"} onOpenChange={resetFlow}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              Solicitar Retirada
-              {identifiedEmployee && (
+              Confirmar e Abrir
+              {createdOrders.length > 1 && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
-                  · {identifiedEmployee.name}
+                  ({doorOrderIndex + 1}/{createdOrders.length})
                 </span>
               )}
             </DialogTitle>
           </DialogHeader>
-          {orderProduct && (
-            <ClientOrderForm
-              allocation={orderProduct}
+          {flow === "door" && createdOrders[doorOrderIndex] && (
+            <DoorConfirmationClient
+              order={createdOrders[doorOrderIndex]}
               client={myClient}
-              employee={identifiedEmployee}
-              onOrderCreated={handleOrderCreated}
-              onCancel={() => setOrderProduct(null)}
+              onConfirmed={handleDoorConfirmed}
             />
           )}
         </DialogContent>
@@ -281,22 +285,6 @@ export default function ClientDashboard() {
           </DialogHeader>
           {myClient && (
             <EmployeeForm client={myClient} onClose={() => setShowEmployeeForm(false)} />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Door confirmation dialog */}
-      <Dialog open={!!createdOrder} onOpenChange={() => setCreatedOrder(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirmar e Abrir</DialogTitle>
-          </DialogHeader>
-          {createdOrder && (
-            <DoorConfirmationClient
-              order={createdOrder}
-              client={myClient}
-              onConfirmed={handleConfirmed}
-            />
           )}
         </DialogContent>
       </Dialog>
