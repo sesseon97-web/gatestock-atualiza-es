@@ -1,6 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Package, ClipboardList, AlertTriangle, ArrowDownRight, ArrowUpRight, MapPin, Tag } from "lucide-react";
+import { Package, ClipboardList, AlertTriangle, ArrowDownRight, ArrowUpRight, MapPin, Tag, Users } from "lucide-react";
 import StatsCard from "@/components/stock/StatsCard";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -18,9 +18,42 @@ export default function Dashboard() {
     queryFn: () => base44.entities.StockOrder.list("-created_date", 50),
   });
 
+  const { data: allocations = [] } = useQuery({
+    queryKey: ["allocations"],
+    queryFn: () => base44.entities.ClientAllocation.list(),
+  });
+
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: () => base44.entities.Client.list(),
+  });
+
   const totalProducts = products.length;
-  const lowStock = products.filter((p) => (p.quantity || 0) <= (p.min_quantity || 5)).length;
   const recentOrders = orders.slice(0, 5);
+
+  // Alertas por cliente: produto onde allocated_quantity > quantity disponível em estoque
+  const clientAlerts = clients.flatMap((client) => {
+    const clientAllocs = allocations.filter((a) => a.client_id === client.id);
+    return clientAllocs
+      .map((alloc) => {
+        const product = products.find((p) => p.id === alloc.product_id);
+        if (!product) return null;
+        const stock = product.quantity || 0;
+        if (stock < alloc.allocated_quantity) {
+          return {
+            client,
+            product,
+            allocated: alloc.allocated_quantity,
+            stock,
+            shortage: alloc.allocated_quantity - stock,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  });
+
+  const lowStock = clientAlerts.length;
 
   return (
     <div className="space-y-8">
@@ -47,25 +80,38 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard title="Total de Produtos" value={totalProducts} icon={Package} accent="primary" />
-        <StatsCard title="Estoque Baixo" value={lowStock} icon={AlertTriangle} accent="destructive" />
+        <StatsCard title="Alertas de Estoque" value={lowStock} icon={AlertTriangle} accent="destructive" />
         <StatsCard title="Total de Pedidos" value={orders.length} icon={ClipboardList} accent="success" />
       </div>
 
-      {/* Low stock alert */}
-      {lowStock > 0 && (
-        <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-3">
+      {/* Low stock alert per client */}
+      {clientAlerts.length > 0 && (
+        <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-destructive" />
-            <h3 className="font-semibold text-destructive">Produtos com Estoque Baixo</h3>
+            <h3 className="font-semibold text-destructive">Estoque Insuficiente por Cliente</h3>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {products
-              .filter((p) => (p.quantity || 0) <= (p.min_quantity || 5))
-              .map((p) => (
-                <Badge key={p.id} variant="secondary" className="bg-destructive/10 text-destructive border-destructive/20">
-                  {p.name} — {p.quantity || 0} {p.unit || "un."}
-                </Badge>
-              ))}
+          <p className="text-xs text-destructive/70">
+            Os produtos abaixo têm estoque menor do que a cota alocada para o cliente.
+          </p>
+          <div className="space-y-2">
+            {clientAlerts.map((alert, i) => (
+              <div key={i} className="flex items-center justify-between gap-3 bg-destructive/10 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Users className="w-4 h-4 text-destructive flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-destructive truncate">{alert.client.name}</p>
+                    <p className="text-xs text-destructive/80 truncate">{alert.product.name}</p>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-destructive/70">Estoque / Cota</p>
+                  <p className="text-sm font-bold text-destructive">
+                    {alert.stock} / {alert.allocated} {alert.product.unit || "un."}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
