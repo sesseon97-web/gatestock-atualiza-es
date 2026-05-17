@@ -46,13 +46,14 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      {/* Rotas públicas de autenticação — redireciona para / se já logado */}
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
+      {/* Rotas protegidas — redireciona para /login se não autenticado */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        {/* Admin routes */}
         {isAdmin ? (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
@@ -63,7 +64,6 @@ const AuthenticatedApp = () => {
             <Route path="/devolucao" element={<ReturnOrder />} />
           </Route>
         ) : (
-          /* Client / Employee routes — UserRoleRouter detecta qual layout usar */
           <Route element={<UserRoleRouter />}>
             <Route path="/" element={<ClientDashboard />} />
             <Route path="/funcionario" element={<EmployeeDashboard />} />
