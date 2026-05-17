@@ -221,7 +221,7 @@ export default function ClientDashboard() {
         ) : (
           <div className="divide-y divide-border">
             {employees.map((emp) => {
-              const empEmail = emp.name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer.local";
+              const empEmail = emp.name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
               return (
                 <div key={emp.id} className="px-5 py-4 flex items-center justify-between">
                   <div>

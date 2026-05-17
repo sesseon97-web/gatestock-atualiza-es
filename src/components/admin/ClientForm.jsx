@@ -37,6 +37,17 @@ export default function ClientForm({ client, onClose }) {
     mutationFn: async (data) => {
       const { password, ...clientData } = data;
       if (client) {
+        // Se informou nova senha, recria o registro de auth (ignora se já existir)
+        if (password) {
+          try {
+            await base44.auth.register({ email: clientData.email, password });
+          } catch (err) {
+            const msg = (err?.message || "").toLowerCase();
+            if (!msg.includes("already") && !msg.includes("exist") && !msg.includes("registered")) {
+              throw err;
+            }
+          }
+        }
         return base44.entities.Client.update(client.id, clientData);
       } else {
         // Tenta registrar o usuário; ignora erro se já existir
@@ -92,35 +103,32 @@ export default function ClientForm({ client, onClose }) {
           <UserPlus className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">Acesso ao Sistema</span>
         </div>
-        {!client && (
-          <div className="space-y-1.5">
-            <Label>Senha de Acesso *</Label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={(e) => set("password", e.target.value)}
-                required
-                className="rounded-xl pr-10"
-                placeholder="Defina a senha do cliente"
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowPassword((v) => !v)}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              O cliente acessa com o <strong>Nome</strong> e esta senha.
-              {form.name && <> Login gerado: <span className="font-mono text-primary">{nameToEmail(form.name)}</span></>}
-            </p>
+        <div className="space-y-1.5">
+          <Label>{client ? "Nova Senha (opcional)" : "Senha de Acesso *"}</Label>
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={(e) => set("password", e.target.value)}
+              required={!client}
+              className="rounded-xl pr-10"
+              placeholder={client ? "Deixe em branco para não alterar" : "Defina a senha do cliente"}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
-        )}
-        {client && (
-          <p className="text-xs text-muted-foreground">Login do cliente: <span className="font-mono text-primary">{client.name}</span></p>
-        )}
+          <p className="text-xs text-muted-foreground">
+            {client
+              ? <>Login: <span className="font-mono text-primary">{client.email}</span></>
+              : <>O cliente acessa com o <strong>Nome</strong> e esta senha.{form.name && <> Login: <span className="font-mono text-primary">{nameToEmail(form.name)}</span></>}</>
+            }
+          </p>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
