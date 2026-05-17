@@ -7,13 +7,41 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import ClientSecondLogin from "@/pages/client/ClientSecondLogin";
 
+const SESSION_KEY = "adifer_client_session";
+
 // Contexto para compartilhar o cliente autenticado no segundo login
 export const ClientSessionContext = createContext(null);
 export const useClientSession = () => useContext(ClientSessionContext);
 
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(client) {
+  try {
+    if (client) sessionStorage.setItem(SESSION_KEY, JSON.stringify(client));
+    else sessionStorage.removeItem(SESSION_KEY);
+  } catch {}
+}
+
 export default function ClientLayout() {
   const { user } = useAuth();
-  const [clientSession, setClientSession] = useState(null);
+  const [clientSession, setClientSession] = useState(() => loadSession());
+
+  const handleLogin = (client) => {
+    saveSession(client);
+    setClientSession(client);
+  };
+
+  const handleLogout = () => {
+    saveSession(null);
+    setClientSession(null);
+  };
 
   const { data: allClients = [], isLoading } = useQuery({
     queryKey: ["all-clients-for-login"],
@@ -34,7 +62,7 @@ export default function ClientLayout() {
     return (
       <ClientSecondLogin
         clients={allClients.filter((c) => c.app_username && c.app_password)}
-        onLogin={(client) => setClientSession(client)}
+        onLogin={handleLogin}
       />
     );
   }
@@ -57,7 +85,7 @@ export default function ClientLayout() {
               variant="ghost"
               size="sm"
               className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-lg gap-2"
-              onClick={() => setClientSession(null)}
+              onClick={handleLogout}
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:block">Sair</span>
