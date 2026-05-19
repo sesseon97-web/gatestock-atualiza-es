@@ -31,7 +31,7 @@ export default function Dashboard() {
   const totalProducts = products.length;
   const recentOrders = orders.slice(0, 5);
 
-  // Alertas por cliente: produto onde allocated_quantity > quantity disponível em estoque
+  // Alertas por cliente: produto onde estoque <= min_quantity definido na alocação, OU estoque < allocated_quantity
   const clientAlerts = clients.flatMap((client) => {
     const clientAllocs = allocations.filter((a) => a.client_id === client.id);
     return clientAllocs
@@ -39,13 +39,18 @@ export default function Dashboard() {
         const product = products.find((p) => p.id === alloc.product_id);
         if (!product) return null;
         const stock = product.quantity || 0;
-        if (stock < alloc.allocated_quantity) {
+        const minQty = alloc.min_quantity || 0;
+        const isMinAlert = minQty > 0 && stock <= minQty;
+        const isShortageAlert = stock < alloc.allocated_quantity;
+        if (isMinAlert || isShortageAlert) {
           return {
             client,
             product,
             allocated: alloc.allocated_quantity,
+            minQty,
             stock,
-            shortage: alloc.allocated_quantity - stock,
+            isMinAlert,
+            isShortageAlert,
           };
         }
         return null;
@@ -86,28 +91,41 @@ export default function Dashboard() {
 
       {/* Low stock alert per client */}
       {clientAlerts.length > 0 && (
-        <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5 space-y-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-destructive" />
-            <h3 className="font-semibold text-destructive">Estoque Insuficiente por Cliente</h3>
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <h3 className="font-semibold text-amber-700">Alertas de Estoque por Cliente</h3>
+            <span className="ml-auto bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              {clientAlerts.length} {clientAlerts.length === 1 ? "item" : "itens"}
+            </span>
           </div>
-          <p className="text-xs text-destructive/70">
-            Os produtos abaixo têm estoque menor do que a cota alocada para o cliente.
-          </p>
           <div className="space-y-2">
             {clientAlerts.map((alert, i) => (
-              <div key={i} className="flex items-center justify-between gap-3 bg-destructive/10 rounded-xl px-4 py-3">
+              <div key={i} className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 ${
+                alert.isShortageAlert ? "bg-destructive/10" : "bg-amber-100"
+              }`}>
                 <div className="flex items-center gap-3 min-w-0">
-                  <Users className="w-4 h-4 text-destructive flex-shrink-0" />
+                  <Users className={`w-4 h-4 flex-shrink-0 ${alert.isShortageAlert ? "text-destructive" : "text-amber-600"}`} />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-destructive truncate">{alert.client.name}</p>
-                    <p className="text-xs text-destructive/80 truncate">{alert.product.name}</p>
+                    <p className={`text-sm font-semibold truncate ${alert.isShortageAlert ? "text-destructive" : "text-amber-800"}`}>
+                      {alert.client.name}
+                    </p>
+                    <p className={`text-xs truncate ${alert.isShortageAlert ? "text-destructive/80" : "text-amber-700"}`}>
+                      {alert.product.name}
+                    </p>
+                    <p className={`text-xs mt-0.5 ${alert.isShortageAlert ? "text-destructive/70" : "text-amber-600"}`}>
+                      {alert.isShortageAlert
+                        ? "⚠ Estoque abaixo da cota alocada"
+                        : `⚠ Estoque abaixo do mínimo (${alert.minQty} ${alert.product.unit || "un."})`}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-destructive/70">Estoque / Cota</p>
-                  <p className="text-sm font-bold text-destructive">
-                    {alert.stock} / {alert.allocated} {alert.product.unit || "un."}
+                  <p className={`text-xs ${alert.isShortageAlert ? "text-destructive/70" : "text-amber-600"}`}>
+                    Estoque atual
+                  </p>
+                  <p className={`text-sm font-bold ${alert.isShortageAlert ? "text-destructive" : "text-amber-700"}`}>
+                    {alert.stock} {alert.product.unit || "un."}
                   </p>
                 </div>
               </div>

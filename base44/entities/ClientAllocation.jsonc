@@ -22,6 +22,11 @@
       "type": "number",
       "default": 0,
       "description": "Quantidade alocada para o cliente"
+    },
+    "min_quantity": {
+      "type": "number",
+      "default": 0,
+      "description": "Quantidade m\u00ednima antes de emitir alerta para o administrador"
     }
   },
   "required": [
