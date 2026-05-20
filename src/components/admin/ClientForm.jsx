@@ -23,7 +23,7 @@ export default function ClientForm({ client, onClose }) {
     company: client?.company || "",
     ip_address: client?.ip_address || "",
     ip_port: client?.ip_port || "",
-    ip_endpoint: client?.ip_endpoint || "/open",
+    ip_endpoint: client?.ip_endpoint || "",
     active: client?.active ?? true,
     notes: client?.notes || "",
   });
@@ -84,8 +84,9 @@ export default function ClientForm({ client, onClose }) {
     mutation.mutate(form);
   };
 
+  // Monta URL: se ip_address já for URL completa, usa direto; senão combina os campos
   const fullUrl = form.ip_address
-    ? `http://${form.ip_address}${form.ip_port ? `:${form.ip_port}` : ""}${form.ip_endpoint || ""}`
+    ? (form.ip_address.startsWith("http") ? form.ip_address : `http://${form.ip_address}${form.ip_port ? `:${form.ip_port}` : ""}${form.ip_endpoint || ""}`)
     : null;
 
   return (
@@ -178,25 +179,23 @@ export default function ClientForm({ client, onClose }) {
       <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
         <div className="flex items-center gap-2 mb-1">
           <Wifi className="w-4 h-4 text-primary" />
-          <span className="font-medium text-sm">Configuração de IP / Atuador</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Endereço IP</Label>
-            <Input value={form.ip_address} onChange={(e) => set("ip_address", e.target.value)} placeholder="192.168.1.10" className="rounded-xl" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Porta</Label>
-            <Input value={form.ip_port} onChange={(e) => set("ip_port", e.target.value)} placeholder="8080" className="rounded-xl" />
-          </div>
+          <span className="font-medium text-sm">Configuração do Atuador (Porta)</span>
         </div>
         <div className="space-y-1.5">
-          <Label>Endpoint (rota)</Label>
-          <Input value={form.ip_endpoint} onChange={(e) => set("ip_endpoint", e.target.value)} placeholder="/open" className="rounded-xl" />
+          <Label>URL completa do atuador</Label>
+          <Input
+            value={form.ip_address}
+            onChange={(e) => set("ip_address", e.target.value)}
+            placeholder="http://192.168.1.10/abrir"
+            className="rounded-xl font-mono text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            Cole a URL completa que aciona a porta. Ex: <span className="font-mono">http://192.168.16.207/abrir</span>
+          </p>
         </div>
         {fullUrl && (
           <p className="text-xs text-primary font-mono bg-primary/5 px-3 py-2 rounded-lg">
-            {fullUrl}
+            ✓ {fullUrl}
           </p>
         )}
       </div>

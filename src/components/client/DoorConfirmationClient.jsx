@@ -11,7 +11,9 @@ export default function DoorConfirmationClient({ order, client, onConfirmed }) {
 
   const triggerIP = async () => {
     if (!client?.ip_address) return { success: false, message: "IP não configurado" };
-    const url = `http://${client.ip_address}${client.ip_port ? `:${client.ip_port}` : ""}${client.ip_endpoint || "/open"}`;
+    const url = client.ip_address.startsWith("http")
+      ? client.ip_address
+      : `http://${client.ip_address}${client.ip_port ? `:${client.ip_port}` : ""}${client.ip_endpoint || "/open"}`;
 
     // Método 1: fetch com no-cors (pode ser bloqueado por mixed content em HTTPS)
     try {
@@ -66,7 +68,7 @@ export default function DoorConfirmationClient({ order, client, onConfirmed }) {
 
   const ipConfigured = !!client?.ip_address;
   const fullUrl = ipConfigured
-    ? `http://${client.ip_address}${client.ip_port ? `:${client.ip_port}` : ""}${client.ip_endpoint || "/open"}`
+    ? (client.ip_address.startsWith("http") ? client.ip_address : `http://${client.ip_address}${client.ip_port ? `:${client.ip_port}` : ""}${client.ip_endpoint || "/open"}`)
     : null;
 
   return (
