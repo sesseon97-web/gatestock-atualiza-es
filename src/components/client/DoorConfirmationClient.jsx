@@ -54,9 +54,9 @@ export default function DoorConfirmationClient({ order, client, onConfirmed }) {
     });
 
     // Update product stock
-    const products = await base44.entities.Product.filter({ id: order.product_id });
-    if (products.length > 0) {
-      const product = products[0];
+    const allProducts = await base44.entities.Product.list();
+    const product = allProducts.find((p) => p.id === order.product_id);
+    if (product) {
       const newQty = Math.max(0, (product.quantity || 0) - order.quantity);
       await base44.entities.Product.update(product.id, { quantity: newQty });
     }
