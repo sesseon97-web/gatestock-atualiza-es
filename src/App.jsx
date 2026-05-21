@@ -22,6 +22,7 @@ import Clients from '@/pages/admin/Clients';
 import ClientDashboard from '@/pages/client/ClientDashboard';
 import EmployeeDashboard from '@/pages/employee/EmployeeDashboard';
 import Reports from '@/pages/admin/Reports';
+import RepresentativeDashboard from '@/pages/representative/RepresentativeDashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
   }
 
   const isAdmin = user?.role === "admin";
+  const isRepresentante = user?.role === "representante";
 
   return (
     <Routes>
@@ -65,6 +67,8 @@ const AuthenticatedApp = () => {
             <Route path="/devolucao" element={<ReturnOrder />} />
             <Route path="/relatorios" element={<Reports />} />
           </Route>
+        ) : isRepresentante ? (
+          <Route path="/" element={<RepresentativeDashboard />} />
         ) : (
           <Route element={<UserRoleRouter />}>
             <Route path="/" element={<ClientDashboard />} />

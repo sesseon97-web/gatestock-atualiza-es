@@ -53,12 +53,16 @@ export default function DoorConfirmationClient({ order, client, onConfirmed }) {
       confirmed_at: new Date().toISOString(),
     });
 
-    // Update product stock
-    const allProducts = await base44.entities.Product.list();
-    const product = allProducts.find((p) => p.id === order.product_id);
-    if (product) {
-      const newQty = Math.max(0, (product.quantity || 0) - order.quantity);
-      await base44.entities.Product.update(product.id, { quantity: newQty });
+    // Atualiza a alocação do cliente (não o estoque geral)
+    if (order.client_id) {
+      const allAllocations = await base44.entities.ClientAllocation.list();
+      const alloc = allAllocations.find(
+        (a) => a.client_id === order.client_id && a.product_id === order.product_id
+      );
+      if (alloc) {
+        const newQty = Math.max(0, (alloc.allocated_quantity || 0) - order.quantity);
+        await base44.entities.ClientAllocation.update(alloc.id, { allocated_quantity: newQty });
+      }
     }
 
     setStep("opened");

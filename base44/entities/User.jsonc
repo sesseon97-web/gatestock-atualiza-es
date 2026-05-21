@@ -1,0 +1,16 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user",
+        "representante"
+      ],
+      "default": "user",
+      "description": "Papel do usu\u00e1rio no sistema"
+    }
+  }
+}
