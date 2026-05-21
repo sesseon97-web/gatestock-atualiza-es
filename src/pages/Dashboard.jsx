@@ -68,18 +68,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-foreground">Painel</h1>
           <p className="text-muted-foreground mt-1">Bem-vindo ao controle de estoque ADIFER</p>
         </div>
-        <div className="flex gap-3">
-          <Link to="/novo-pedido">
-            <Button className="rounded-xl gap-2 bg-primary shadow-lg shadow-primary/20">
-              <ArrowDownRight className="w-4 h-4" /> Retirar
-            </Button>
-          </Link>
-          <Link to="/devolucao">
-            <Button variant="outline" className="rounded-xl gap-2">
-              <ArrowUpRight className="w-4 h-4" /> Devolver
-            </Button>
-          </Link>
-        </div>
+
       </div>
 
       {/* Stats */}
