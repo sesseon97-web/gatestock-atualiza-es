@@ -1,47 +1,16 @@
-import { useState, createContext, useContext } from "react";
+import { createContext, useContext } from "react";
 import { Outlet } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import ClientSecondLogin from "@/pages/client/ClientSecondLogin";
 
-const SESSION_KEY = "adifer_client_session";
-
-// Contexto para compartilhar o cliente autenticado no segundo login
 export const ClientSessionContext = createContext(null);
 export const useClientSession = () => useContext(ClientSessionContext);
 
-function loadSession() {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveSession(client) {
-  try {
-    if (client) sessionStorage.setItem(SESSION_KEY, JSON.stringify(client));
-    else sessionStorage.removeItem(SESSION_KEY);
-  } catch {}
-}
-
 export default function ClientLayout() {
   const { user } = useAuth();
-  const [clientSession, setClientSession] = useState(() => loadSession());
-
-  const handleLogin = (client) => {
-    saveSession(client);
-    setClientSession(client);
-  };
-
-  const handleLogout = () => {
-    saveSession(null);
-    setClientSession(null);
-  };
 
   const { data: allClients = [], isLoading } = useQuery({
     queryKey: ["all-clients-for-login"],
@@ -57,20 +26,28 @@ export default function ClientLayout() {
     );
   }
 
-  // Se não fez o segundo login ainda, mostra a tela de login do cliente
+  // Identifica o cliente pelo email do usuário logado
+  const clientSession = allClients.find(
+    (c) => c.email?.toLowerCase() === user?.email?.toLowerCase()
+  );
+
   if (!clientSession) {
     return (
-      <ClientSecondLogin
-        clients={allClients.filter((c) => c.app_username && c.app_password)}
-        onLogin={handleLogin}
-      />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="text-center space-y-3">
+          <p className="text-muted-foreground text-sm">
+            Nenhum cliente encontrado para o email <span className="font-mono text-primary">{user?.email}</span>.
+          </p>
+          <p className="text-xs text-muted-foreground">Entre em contato com o administrador.</p>
+          <Button variant="outline" size="sm" onClick={() => base44.auth.logout()}>Sair</Button>
+        </div>
+      </div>
     );
   }
 
   return (
     <ClientSessionContext.Provider value={clientSession}>
       <div className="min-h-screen bg-background">
-        {/* Top bar */}
         <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 py-3 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <img
@@ -80,17 +57,15 @@ export default function ClientLayout() {
             />
             <span className="text-sm font-semibold text-sidebar-foreground">{clientSession.name}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-lg gap-2"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:block">Sair</span>
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-lg gap-2"
+            onClick={() => base44.auth.logout()}
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:block">Sair</span>
+          </Button>
         </header>
 
         <main className="p-4 md:p-8 max-w-5xl mx-auto">
