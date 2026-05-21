@@ -192,8 +192,15 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(30, 64, 175);
-      doc.text("2. Quantidade Total Retirada por Item", marginX, curY);
-      curY += 4;
+      doc.text("2. Resumo de Movimentações por Item", marginX, curY);
+      curY += 5;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80, 80, 80);
+      doc.text("Retiradas: total de itens retirados do estoque no período (pedidos confirmados).", marginX, curY);
+      curY += 4.5;
+      doc.text("Devoluções: total de itens devolvidos ao estoque no período (pedidos confirmados).", marginX, curY);
+      curY += 5;
 
       const totalCols = [
         { label: "Produto", w: 110 },
