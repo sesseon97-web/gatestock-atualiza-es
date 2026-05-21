@@ -1,6 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDownRight, ArrowUpRight, ClipboardList, DoorOpen } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,7 +60,7 @@ export default function Orders() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {order.quantity}x · {format(new Date(order.created_date), "dd/MM/yyyy HH:mm")}
+                    {order.quantity}x · {formatInTimeZone(new Date(order.created_date), "America/Sao_Paulo", "dd/MM/yyyy HH:mm")}
                   </p>
                   {order.client_name && (
                     <p className="text-xs text-muted-foreground">cliente: {order.client_name}</p>

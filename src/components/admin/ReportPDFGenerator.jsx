@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import jsPDF from "jspdf";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -85,7 +85,7 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text(`Relatório Mensal — ${monthLabel}`, marginX, 20);
-        doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, pageW - marginX, 20, { align: "right" });
+        doc.text(`Gerado em: ${formatInTimeZone(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm")}`, pageW - marginX, 20, { align: "right" });
       };
 
       const addFooter = (pageNum, total) => {
@@ -141,7 +141,7 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
           curY += 7;
         }
         const vals = [
-          format(new Date(o.created_date), "dd/MM/yy HH:mm"),
+          formatInTimeZone(new Date(o.created_date), "America/Sao_Paulo", "dd/MM/yy HH:mm"),
           o.type === "retirada" ? "Retirada" : "Devolução",
           o.product_name || "—",
           String(o.quantity || 0),
