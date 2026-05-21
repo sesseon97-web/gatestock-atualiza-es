@@ -63,8 +63,7 @@ const AuthenticatedApp = () => {
             <Route path="/produtos" element={<Products />} />
             <Route path="/clientes" element={<Clients />} />
             <Route path="/pedidos" element={<Orders />} />
-            <Route path="/novo-pedido" element={<NewOrder />} />
-            <Route path="/devolucao" element={<ReturnOrder />} />
+
             <Route path="/relatorios" element={<Reports />} />
           </Route>
         ) : isRepresentante ? (

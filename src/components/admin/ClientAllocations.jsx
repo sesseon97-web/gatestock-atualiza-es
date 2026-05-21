@@ -34,16 +34,36 @@ export default function ClientAllocations({ client }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ClientAllocation.update(id, data),
+    mutationFn: async ({ id, alloc, data }) => {
+      // Se mudou allocated_quantity, ajusta estoque do produto
+      if (data.allocated_quantity !== undefined && alloc) {
+        const prod = products.find((p) => p.id === alloc.product_id);
+        if (prod) {
+          const diff = data.allocated_quantity - (alloc.allocated_quantity || 0);
+          const newStock = Math.max(0, (prod.quantity || 0) - diff);
+          await base44.entities.Product.update(prod.id, { quantity: newStock });
+        }
+      }
+      return base44.entities.ClientAllocation.update(id, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allocations", client.id] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ClientAllocation.delete(id),
+    mutationFn: async (alloc) => {
+      // Devolve quantidade ao estoque do produto ao remover alocação
+      const prod = products.find((p) => p.id === alloc.product_id);
+      if (prod) {
+        await base44.entities.Product.update(prod.id, { quantity: (prod.quantity || 0) + (alloc.allocated_quantity || 0) });
+      }
+      return base44.entities.ClientAllocation.delete(alloc.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allocations", client.id] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Alocação removida");
     },
   });
@@ -52,8 +72,13 @@ export default function ClientAllocations({ client }) {
   const availableProducts = products.filter((p) => !allocatedProductIds.includes(p.id));
   const product = products.find((p) => p.id === selectedProduct);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!selectedProduct || qty < 1) return;
+    // Baixa o estoque do produto ao alocar
+    if (product) {
+      const newStock = Math.max(0, (product.quantity || 0) - qty);
+      await base44.entities.Product.update(product.id, { quantity: newStock });
+    }
     addMutation.mutate({
       client_id: client.id,
       client_email: client.email,
@@ -96,7 +121,7 @@ export default function ClientAllocations({ client }) {
                       min={1}
                       max={stock}
                       value={alloc.allocated_quantity}
-                      onChange={(e) => updateMutation.mutate({ id: alloc.id, data: { allocated_quantity: Number(e.target.value) } })}
+                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } })}
                       className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
@@ -106,13 +131,13 @@ export default function ClientAllocations({ client }) {
                       type="number"
                       min={0}
                       value={alloc.min_quantity || 0}
-                      onChange={(e) => updateMutation.mutate({ id: alloc.id, data: { min_quantity: Number(e.target.value) } })}
+                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } })}
                       className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
                   <Button
                     variant="ghost" size="icon" className="h-8 w-8 text-destructive flex-shrink-0 mt-4"
-                    onClick={() => deleteMutation.mutate(alloc.id)}
+                    onClick={() => deleteMutation.mutate(alloc)}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
