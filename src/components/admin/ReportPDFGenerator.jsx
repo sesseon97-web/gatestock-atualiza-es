@@ -1,143 +1,231 @@
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
+function drawTableHeader(doc, cols, y, marginX) {
+  doc.setFillColor(30, 64, 175);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  let x = marginX;
+  cols.forEach((col) => {
+    doc.rect(x, y, col.w, 7, "F");
+    doc.text(col.label, x + 2, y + 5);
+    x += col.w;
+  });
+}
+
+function drawTableRow(doc, cols, values, y, marginX, isAlt) {
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  if (isAlt) {
+    doc.setFillColor(245, 247, 255);
+    let x = marginX;
+    cols.forEach((col) => { doc.rect(x, y, col.w, 6, "F"); x += col.w; });
+  }
+  let x = marginX;
+  cols.forEach((col, i) => {
+    const val = String(values[i] ?? "");
+    // color for status column
+    if (col.label === "Status") {
+      doc.setTextColor(val === "Cancelado" ? [185, 28, 28] : [21, 128, 61]);
+    } else {
+      doc.setTextColor(30, 30, 30);
+    }
+    const truncated = doc.getTextWidth(val) > col.w - 4
+      ? val.substring(0, Math.floor((col.w - 6) / (doc.getTextWidth(val) / val.length))) + "…"
+      : val;
+    doc.text(truncated, x + 2, y + 4.5);
+    x += col.w;
+  });
+  doc.setTextColor(30, 30, 30);
+}
+
+function drawBorderLines(doc, cols, startY, rowCount, marginX, rowH) {
+  const totalW = cols.reduce((s, c) => s + c.w, 0);
+  doc.setDrawColor(200, 210, 230);
+  doc.setLineWidth(0.2);
+  // outer border
+  doc.rect(marginX, startY, totalW, 7 + rowCount * rowH);
+  // vertical col lines
+  let x = marginX;
+  cols.forEach((col) => { x += col.w; doc.line(x, startY, x, startY + 7 + rowCount * rowH); });
+  // horizontal row lines
+  for (let i = 0; i <= rowCount; i++) {
+    doc.line(marginX, startY + 7 + i * rowH, marginX + totalW, startY + 7 + i * rowH);
+  }
+}
+
 export default function ReportPDFGenerator({ client, orders, monthLabel }) {
   const [loading, setLoading] = useState(false);
 
-  const generate = async () => {
+  const generate = () => {
     setLoading(true);
+    setTimeout(() => {
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const marginX = 14;
+      const marginBottom = 15;
 
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const marginX = 14;
+      const addHeader = () => {
+        doc.setFillColor(30, 64, 175);
+        doc.rect(0, 0, pageW, 28, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(15);
+        doc.setFont("helvetica", "bold");
+        doc.text("ADIFER Ferramentas", marginX, 12);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Relatório Mensal — ${monthLabel}`, marginX, 20);
+        doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, pageW - marginX, 20, { align: "right" });
+      };
 
-    // ── Header ──────────────────────────────────────────────
-    doc.setFillColor(30, 64, 175); // primary blue
-    doc.rect(0, 0, pageW, 30, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("ADIFER Ferramentas", marginX, 13);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Relatório Mensal de Movimentações — ${monthLabel}`, marginX, 21);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, pageW - marginX, 21, { align: "right" });
+      const addFooter = (pageNum, total) => {
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Página ${pageNum} de ${total}`, pageW / 2, pageH - 5, { align: "center" });
+      };
 
-    // ── Client Info ──────────────────────────────────────────
-    doc.setTextColor(30, 30, 30);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("Cliente", marginX, 40);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(client.name, marginX, 47);
-    if (client.company) doc.text(client.company, marginX, 53);
-    doc.text(client.email, marginX, client.company ? 59 : 53);
+      // ── Page 1 ──────────────────────────────────────────────
+      addHeader();
 
-    let startY = client.company ? 67 : 61;
-
-    // ── Section 1: Histórico de Pedidos ──────────────────────
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 64, 175);
-    doc.text("1. Histórico de Pedidos", marginX, startY);
-
-    const orderRows = orders.map((o) => [
-      format(new Date(o.created_date), "dd/MM/yyyy HH:mm"),
-      o.type === "retirada" ? "Retirada" : "Devolução",
-      o.product_name || "—",
-      String(o.quantity || 0),
-      o.employee_name || "—",
-      o.status === "cancelado" ? "Cancelado" : "Confirmado",
-    ]);
-
-    autoTable(doc, {
-      startY: startY + 4,
-      head: [["Data/Hora", "Tipo", "Produto", "Qtd", "Funcionário", "Status"]],
-      body: orderRows,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [245, 247, 255] },
-      columnStyles: {
-        0: { cellWidth: 32 },
-        1: { cellWidth: 22 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 12 },
-        4: { cellWidth: 38 },
-        5: { cellWidth: 22 },
-      },
-      margin: { left: marginX, right: marginX },
-      didDrawCell: (data) => {
-        if (data.section === "body" && data.column.index === 5) {
-          const val = data.cell.raw;
-          if (val === "Cancelado") {
-            doc.setTextColor(185, 28, 28);
-          } else {
-            doc.setTextColor(21, 128, 61);
-          }
-        }
-      },
-    });
-
-    // ── Section 2: Totais por Produto ────────────────────────
-    const totalY = doc.lastAutoTable.finalY + 12;
-
-    // Calcular totais de retiradas por produto
-    const totalsMap = {};
-    orders
-      .filter((o) => o.type === "retirada" && o.status !== "cancelado")
-      .forEach((o) => {
-        const key = o.product_name || "Desconhecido";
-        totalsMap[key] = (totalsMap[key] || 0) + (o.quantity || 0);
-      });
-
-    const totalRows = Object.entries(totalsMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([product, qty]) => [product, String(qty)]);
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 64, 175);
-    doc.text("2. Quantidade Total Retirada por Item", marginX, totalY);
-
-    if (totalRows.length === 0) {
+      // Client info
+      doc.setTextColor(30, 30, 30);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Cliente:", marginX, 38);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text("Nenhuma retirada registrada neste período.", marginX, totalY + 8);
-    } else {
-      autoTable(doc, {
-        startY: totalY + 4,
-        head: [["Produto", "Qtd Total Retirada"]],
-        body: totalRows,
-        styles: { fontSize: 9, cellPadding: 3 },
-        headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: "bold" },
-        alternateRowStyles: { fillColor: [245, 247, 255] },
-        columnStyles: {
-          0: { cellWidth: 130 },
-          1: { cellWidth: 40, halign: "center", fontStyle: "bold" },
-        },
-        margin: { left: marginX, right: marginX },
+      doc.text(`${client.name}${client.company ? " — " + client.company : ""}`, marginX + 18, 38);
+      doc.text(`E-mail: ${client.email}`, marginX, 44);
+
+      // Section 1 title
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 64, 175);
+      doc.text("1. Histórico de Pedidos", marginX, 53);
+
+      const orderCols = [
+        { label: "Data/Hora", w: 33 },
+        { label: "Tipo", w: 22 },
+        { label: "Produto", w: 52 },
+        { label: "Qtd", w: 12 },
+        { label: "Funcionário", w: 37 },
+        { label: "Status", w: 26 },
+      ];
+      const rowH = 6;
+
+      let curY = 56;
+      let pageNum = 1;
+      const pages = [pageNum];
+
+      drawTableHeader(doc, orderCols, curY, marginX);
+      curY += 7;
+
+      orders.forEach((o, i) => {
+        if (curY + rowH > pageH - marginBottom) {
+          addFooter(pageNum, "?");
+          doc.addPage();
+          pageNum++;
+          pages.push(pageNum);
+          addHeader();
+          curY = 35;
+          drawTableHeader(doc, orderCols, curY, marginX);
+          curY += 7;
+        }
+        const vals = [
+          format(new Date(o.created_date), "dd/MM/yy HH:mm"),
+          o.type === "retirada" ? "Retirada" : "Devolução",
+          o.product_name || "—",
+          String(o.quantity || 0),
+          o.employee_name || "—",
+          o.status === "cancelado" ? "Cancelado" : "Confirmado",
+        ];
+        drawTableRow(doc, orderCols, vals, curY, marginX, i % 2 === 1);
+        curY += rowH;
       });
-    }
 
-    // ── Footer ───────────────────────────────────────────────
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      doc.text(`Página ${i} de ${pageCount}`, pageW / 2, 290, { align: "center" });
-    }
+      if (orders.length === 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text("Nenhum pedido registrado neste período.", marginX, curY + 6);
+        curY += 12;
+      }
 
-    const filename = `relatorio_${client.name.replace(/\s+/g, "_")}_${monthLabel.replace(/\s+/g, "_")}.pdf`;
-    doc.save(filename);
-    setLoading(false);
+      // ── Section 2: Totais ──────────────────────────────────
+      const totalsMap = {};
+      orders
+        .filter((o) => o.type === "retirada" && o.status !== "cancelado")
+        .forEach((o) => {
+          const key = o.product_name || "Desconhecido";
+          totalsMap[key] = (totalsMap[key] || 0) + (o.quantity || 0);
+        });
+      const totalRows = Object.entries(totalsMap).sort((a, b) => b[1] - a[1]);
+
+      const needSpace = 12 + 7 + totalRows.length * rowH + 10;
+      if (curY + needSpace > pageH - marginBottom) {
+        addFooter(pageNum, "?");
+        doc.addPage();
+        pageNum++;
+        pages.push(pageNum);
+        addHeader();
+        curY = 35;
+      } else {
+        curY += 10;
+      }
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 64, 175);
+      doc.text("2. Quantidade Total Retirada por Item", marginX, curY);
+      curY += 4;
+
+      const totalCols = [
+        { label: "Produto", w: 142 },
+        { label: "Qtd Total", w: 40 },
+      ];
+
+      drawTableHeader(doc, totalCols, curY, marginX);
+      curY += 7;
+
+      if (totalRows.length === 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text("Nenhuma retirada confirmada neste período.", marginX, curY + 4);
+      } else {
+        totalRows.forEach(([product, qty], i) => {
+          if (curY + rowH > pageH - marginBottom) {
+            addFooter(pageNum, "?");
+            doc.addPage();
+            pageNum++;
+            pages.push(pageNum);
+            addHeader();
+            curY = 35;
+            drawTableHeader(doc, totalCols, curY, marginX);
+            curY += 7;
+          }
+          drawTableRow(doc, totalCols, [product, String(qty)], curY, marginX, i % 2 === 1);
+          curY += rowH;
+        });
+      }
+
+      // Fix footer page count
+      const totalPages = pageNum;
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Página ${p} de ${totalPages}`, pageW / 2, pageH - 5, { align: "center" });
+      }
+
+      const filename = `relatorio_${client.name.replace(/\s+/g, "_")}_${monthLabel.replace(/\s+/g, "_")}.pdf`;
+      doc.save(filename);
+      setLoading(false);
+    }, 100);
   };
 
   return (
