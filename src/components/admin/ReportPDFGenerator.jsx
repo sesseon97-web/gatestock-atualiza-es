@@ -141,7 +141,7 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
           curY += 7;
         }
         const vals = [
-          formatInTimeZone(new Date(o.created_date), "America/Sao_Paulo", "dd/MM/yy HH:mm"),
+          formatInTimeZone(new Date(o.created_date.endsWith("Z") ? o.created_date : o.created_date + "Z"), "America/Sao_Paulo", "dd/MM/yy HH:mm"),
           o.type === "retirada" ? "Retirada" : "Devolução",
           o.product_name || "—",
           String(o.quantity || 0),

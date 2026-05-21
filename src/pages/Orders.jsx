@@ -60,7 +60,7 @@ export default function Orders() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {order.quantity}x · {formatInTimeZone(new Date(order.created_date), "America/Sao_Paulo", "dd/MM/yyyy HH:mm")}
+                    {order.quantity}x · {formatInTimeZone(new Date(order.created_date.endsWith("Z") ? order.created_date : order.created_date + "Z"), "America/Sao_Paulo", "dd/MM/yyyy HH:mm")}
                   </p>
                   {order.client_name && (
                     <p className="text-xs text-muted-foreground">cliente: {order.client_name}</p>

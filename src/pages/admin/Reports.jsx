@@ -169,7 +169,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm font-medium">{order.product_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {order.client_name || "—"} · {order.quantity}x · {formatInTimeZone(new Date(order.created_date), "America/Sao_Paulo", "dd/MM/yyyy HH:mm")}
+                      {order.client_name || "—"} · {order.quantity}x · {formatInTimeZone(new Date(order.created_date.endsWith("Z") ? order.created_date : order.created_date + "Z"), "America/Sao_Paulo", "dd/MM/yyyy HH:mm")}
                     </p>
                     {order.employee_name && (
                       <p className="text-xs text-muted-foreground mt-0.5">
