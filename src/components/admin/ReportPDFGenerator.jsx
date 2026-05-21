@@ -30,7 +30,11 @@ function drawTableRow(doc, cols, values, y, marginX, isAlt) {
     const val = String(values[i] ?? "");
     // color for status column
     if (col.label === "Status") {
-      doc.setTextColor(val === "Cancelado" ? [185, 28, 28] : [21, 128, 61]);
+      if (val === "Cancelado") {
+        doc.setTextColor(185, 28, 28);
+      } else {
+        doc.setTextColor(21, 128, 61);
+      }
     } else {
       doc.setTextColor(30, 30, 30);
     }
