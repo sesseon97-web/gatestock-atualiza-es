@@ -4,22 +4,17 @@ import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-function drawTableHeader(doc, cols, y, marginX, darkText = false) {
+function drawTableHeader(doc, cols, y, marginX) {
   doc.setFillColor(30, 64, 175);
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   let x = marginX;
   cols.forEach((col) => {
     doc.rect(x, y, col.w, 7, "F");
-    if (darkText) {
-      doc.setTextColor(0, 0, 0);
-    } else {
-      doc.setTextColor(255, 255, 255);
-    }
     doc.text(col.label, x + 2, y + 5);
     x += col.w;
   });
-  doc.setTextColor(30, 30, 30);
 }
 
 function drawTableRow(doc, cols, values, y, marginX, isAlt) {
@@ -213,7 +208,7 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
         { label: "DEVOLUÇÃO", w: 36, dark: true },
       ];
 
-      drawTableHeader(doc, totalCols, curY, marginX, true);
+      drawTableHeader(doc, totalCols, curY, marginX);
       curY += 7;
 
       if (totalRows.length === 0) {
@@ -231,7 +226,7 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
             pages.push(pageNum);
             addHeader();
             curY = 35;
-            drawTableHeader(doc, totalCols, curY, marginX, true);
+            drawTableHeader(doc, totalCols, curY, marginX);
             curY += 7;
           }
           drawTableRow(doc, totalCols, [product, String(ret), String(dev)], curY, marginX, i % 2 === 1);
