@@ -203,9 +203,9 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
       curY += 5;
 
       const totalCols = [
-        { label: "Produto", w: 110 },
-        { label: "Retirada", w: 36 },
-        { label: "Devolução", w: 36 },
+        { label: "PRODUTO", w: 110 },
+        { label: "RETIRADA", w: 36 },
+        { label: "DEVOLUÇÃO", w: 36 },
       ];
 
       drawTableHeader(doc, totalCols, curY, marginX);
