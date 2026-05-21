@@ -5,16 +5,17 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 function drawTableHeader(doc, cols, y, marginX) {
-  doc.setFillColor(30, 64, 175);
-  doc.setTextColor(255, 255, 255);
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   let x = marginX;
   cols.forEach((col) => {
+    doc.setFillColor(30, 64, 175);
+    doc.setTextColor(255, 255, 255);
     doc.rect(x, y, col.w, 7, "F");
     doc.text(col.label, x + 2, y + 5);
     x += col.w;
   });
+  doc.setTextColor(30, 30, 30);
 }
 
 function drawTableRow(doc, cols, values, y, marginX, isAlt) {
