@@ -160,14 +160,22 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
       }
 
       // ── Section 2: Totais ──────────────────────────────────
-      const totalsMap = {};
+      const retiradaMap = {};
+      const devolucaoMap = {};
       orders
-        .filter((o) => o.type === "retirada" && o.status !== "cancelado")
+        .filter((o) => o.status !== "cancelado")
         .forEach((o) => {
           const key = o.product_name || "Desconhecido";
-          totalsMap[key] = (totalsMap[key] || 0) + (o.quantity || 0);
+          if (o.type === "retirada") {
+            retiradaMap[key] = (retiradaMap[key] || 0) + (o.quantity || 0);
+          } else {
+            devolucaoMap[key] = (devolucaoMap[key] || 0) + (o.quantity || 0);
+          }
         });
-      const totalRows = Object.entries(totalsMap).sort((a, b) => b[1] - a[1]);
+      const allProducts = [...new Set([...Object.keys(retiradaMap), ...Object.keys(devolucaoMap)])];
+      const totalRows = allProducts
+        .map((p) => [p, retiradaMap[p] || 0, devolucaoMap[p] || 0])
+        .sort((a, b) => b[1] - a[1]);
 
       const needSpace = 12 + 7 + totalRows.length * rowH + 10;
       if (curY + needSpace > pageH - marginBottom) {
@@ -188,8 +196,9 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
       curY += 4;
 
       const totalCols = [
-        { label: "Produto", w: 142 },
-        { label: "Qtd Total", w: 40 },
+        { label: "Produto", w: 110 },
+        { label: "Retiradas", w: 36 },
+        { label: "Devoluções", w: 36 },
       ];
 
       drawTableHeader(doc, totalCols, curY, marginX);
@@ -201,7 +210,8 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
         doc.setTextColor(120);
         doc.text("Nenhuma retirada confirmada neste período.", marginX, curY + 4);
       } else {
-        totalRows.forEach(([product, qty], i) => {
+        totalRows.forEach(([product, ret, dev], i) => {
+          const qty = ret; // keep variable for page-break check
           if (curY + rowH > pageH - marginBottom) {
             addFooter(pageNum, "?");
             doc.addPage();
@@ -212,7 +222,7 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
             drawTableHeader(doc, totalCols, curY, marginX);
             curY += 7;
           }
-          drawTableRow(doc, totalCols, [product, String(qty)], curY, marginX, i % 2 === 1);
+          drawTableRow(doc, totalCols, [product, String(ret), String(dev)], curY, marginX, i % 2 === 1);
           curY += rowH;
         });
       }
