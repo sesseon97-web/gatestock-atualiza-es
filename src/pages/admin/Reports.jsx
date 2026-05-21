@@ -2,6 +2,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
 import { ArrowDownRight, ArrowUpRight, FileText, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -168,7 +169,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm font-medium">{order.product_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {order.client_name || "—"} · {order.quantity}x · {format(new Date(order.created_date), "dd/MM/yyyy HH:mm")}
+                      {order.client_name || "—"} · {order.quantity}x · {formatInTimeZone(new Date(order.created_date), "America/Sao_Paulo", "dd/MM/yyyy HH:mm")}
                     </p>
                     {order.employee_name && (
                       <p className="text-xs text-muted-foreground mt-0.5">
