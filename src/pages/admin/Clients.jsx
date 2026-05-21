@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ClientForm from "@/components/admin/ClientForm";
 import ClientAllocations from "@/components/admin/ClientAllocations";
+import ClientRepresentative from "@/components/admin/ClientRepresentative";
 import { toast } from "sonner";
 
 export default function Clients() {
@@ -117,8 +118,11 @@ export default function Clients() {
                 </div>
               </div>
               {expandedClient === client.id && (
-                <div className="border-t border-border bg-muted/30 p-5">
-                  <ClientAllocations client={client} />
+                <div className="border-t border-border bg-muted/30 p-5 space-y-6">
+                  <ClientRepresentative client={client} />
+                  <div className="border-t border-border pt-4">
+                    <ClientAllocations client={client} />
+                  </div>
                 </div>
               )}
             </div>

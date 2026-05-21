@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Package, Plus, RefreshCw, Users, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,8 +11,13 @@ export default function RepresentativeDashboard() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [showReplenish, setShowReplenish] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const { data: clients = [] } = useQuery({
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  const { data: allClients = [] } = useQuery({
     queryKey: ["clients"],
     queryFn: () => base44.entities.Client.list(),
   });
@@ -27,8 +32,18 @@ export default function RepresentativeDashboard() {
     queryFn: () => base44.entities.Product.list(),
   });
 
+  // Filtra apenas os clientes vinculados a este representante
+  const clients = currentUser
+    ? allClients.filter((c) => c.representative_id === currentUser.id)
+    : [];
+
+  const myClientIds = new Set(clients.map((c) => c.id));
+
   const lowStockAllocations = allocations.filter(
-    (a) => (a.min_quantity || 0) > 0 && (a.allocated_quantity || 0) <= (a.min_quantity || 0)
+    (a) =>
+      myClientIds.has(a.client_id) &&
+      (a.min_quantity || 0) > 0 &&
+      (a.allocated_quantity || 0) <= (a.min_quantity || 0)
   );
 
   const handleReplenish = (client) => {
