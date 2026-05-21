@@ -11,9 +11,6 @@ import { Wifi, Eye, EyeOff, UserPlus, KeyRound } from "lucide-react";
 
 export default function ClientForm({ client, onClose }) {
   const queryClient = useQueryClient();
-  const nameToEmail = (name) =>
-    name.trim().toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "") + "@adifer-app.com";
-
   const [form, setForm] = useState({
     name: client?.name || "",
     email: client?.email || "",
@@ -31,10 +28,6 @@ export default function ClientForm({ client, onClose }) {
   const [showAppPassword, setShowAppPassword] = useState(false);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleNameChange = (name) => {
-    setForm((f) => ({ ...f, name, email: client ? f.email : nameToEmail(name) }));
-  };
 
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -93,8 +86,8 @@ export default function ClientForm({ client, onClose }) {
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Nome * <span className="text-muted-foreground font-normal">(usado como login)</span></Label>
-          <Input value={form.name} onChange={(e) => handleNameChange(e.target.value)} required className="rounded-xl" />
+          <Label>Nome *</Label>
+          <Input value={form.name} onChange={(e) => set("name", e.target.value)} required className="rounded-xl" />
         </div>
         <div className="space-y-1.5">
           <Label>Empresa / Setor</Label>
@@ -105,7 +98,22 @@ export default function ClientForm({ client, onClose }) {
       <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
         <div className="flex items-center gap-2 mb-1">
           <UserPlus className="w-4 h-4 text-primary" />
-          <span className="font-medium text-sm">Acesso ao Sistema</span>
+          <span className="font-medium text-sm">Acesso ao Sistema (Dashboard)</span>
+        </div>
+        <div className="space-y-1.5">
+          <Label>E-mail de Acesso *</Label>
+          <Input
+            type="email"
+            value={form.email}
+            onChange={(e) => set("email", e.target.value)}
+            required
+            disabled={!!client}
+            className="rounded-xl"
+            placeholder="email@empresa.com"
+          />
+          {client && (
+            <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado após o cadastro.</p>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label>{client ? "Nova Senha (opcional)" : "Senha de Acesso *"}</Label>
@@ -127,10 +135,7 @@ export default function ClientForm({ client, onClose }) {
             </button>
           </div>
           <p className="text-xs text-muted-foreground">
-            {client
-              ? <>Login: <span className="font-mono text-primary">{client.email}</span></>
-              : <>O cliente acessa com o <strong>Nome</strong> e esta senha.{form.name && <> Login: <span className="font-mono text-primary">{nameToEmail(form.name)}</span></>}</>
-            }
+            O cliente acessa o dashboard com este e-mail e senha.
           </p>
         </div>
       </div>
