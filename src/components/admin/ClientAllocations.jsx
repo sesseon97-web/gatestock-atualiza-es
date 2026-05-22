@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Package, AlertTriangle, Search } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +12,6 @@ export default function ClientAllocations({ client }) {
   const [selectedProduct, setSelectedProduct] = useState("");
   const [qty, setQty] = useState(1);
   const [minQty, setMinQty] = useState(0);
-  const [search, setSearch] = useState("");
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -70,9 +69,7 @@ export default function ClientAllocations({ client }) {
   });
 
   const allocatedProductIds = allocations.map((a) => a.product_id);
-  const availableProducts = products
-    .filter((p) => !allocatedProductIds.includes(p.id))
-    .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const availableProducts = products.filter((p) => !allocatedProductIds.includes(p.id));
   const product = products.find((p) => p.id === selectedProduct);
 
   const handleAdd = async () => {
@@ -120,24 +117,22 @@ export default function ClientAllocations({ client }) {
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="text-xs text-muted-foreground">Qtd</span>
                     <Input
-                     type="number"
-                     min={1}
-                     max={stock}
-                     value={alloc.allocated_quantity}
-                     onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } })}
-                     onFocus={(e) => e.target.select()}
-                     className="w-20 h-8 rounded-lg text-sm"
+                      type="number"
+                      min={1}
+                      max={stock}
+                      value={alloc.allocated_quantity}
+                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } })}
+                      className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="text-xs text-muted-foreground">Qtd Mín.</span>
                     <Input
-                     type="number"
-                     min={0}
-                     value={alloc.min_quantity || 0}
-                     onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } })}
-                     onFocus={(e) => e.target.select()}
-                     className="w-20 h-8 rounded-lg text-sm"
+                      type="number"
+                      min={0}
+                      value={alloc.min_quantity || 0}
+                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } })}
+                      className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
                   <Button
@@ -153,18 +148,8 @@ export default function ClientAllocations({ client }) {
         </div>
       )}
 
-      {(availableProducts.length > 0 || search) && (
-        <div className="flex flex-col gap-2 pt-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setSelectedProduct(""); }}
-              placeholder="Buscar ferramenta..."
-              className="pl-9 h-9 rounded-xl text-sm"
-            />
-          </div>
-        <div className="flex items-center gap-2 flex-wrap">
+      {availableProducts.length > 0 && (
+        <div className="flex items-center gap-2 pt-2 flex-wrap">
           <Select value={selectedProduct} onValueChange={setSelectedProduct}>
             <SelectTrigger className="flex-1 min-w-[180px] h-9 rounded-xl text-sm">
               <SelectValue placeholder="Adicionar produto..." />
@@ -183,7 +168,6 @@ export default function ClientAllocations({ client }) {
             max={product?.quantity || 999}
             value={qty}
             onChange={(e) => setQty(Number(e.target.value))}
-            onFocus={(e) => e.target.select()}
             className="w-24 h-9 rounded-xl text-sm"
             placeholder="Qtd"
             title="Quantidade alocada"
@@ -193,7 +177,6 @@ export default function ClientAllocations({ client }) {
             min={0}
             value={minQty}
             onChange={(e) => setMinQty(Number(e.target.value))}
-            onFocus={(e) => e.target.select()}
             className="w-24 h-9 rounded-xl text-sm"
             placeholder="Qtd Mín."
             title="Quantidade mínima para alerta"
@@ -201,7 +184,6 @@ export default function ClientAllocations({ client }) {
           <Button size="sm" onClick={handleAdd} disabled={!selectedProduct} className="rounded-xl gap-1 h-9">
             <Plus className="w-3.5 h-3.5" /> Alocar
           </Button>
-        </div>
         </div>
       )}
     </div>
