@@ -120,22 +120,24 @@ export default function ClientAllocations({ client }) {
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="text-xs text-muted-foreground">Qtd</span>
                     <Input
-                      type="number"
-                      min={1}
-                      max={stock}
-                      value={alloc.allocated_quantity}
-                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } })}
-                      className="w-20 h-8 rounded-lg text-sm"
+                     type="number"
+                     min={1}
+                     max={stock}
+                     value={alloc.allocated_quantity}
+                     onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } })}
+                     onFocus={(e) => e.target.select()}
+                     className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="text-xs text-muted-foreground">Qtd Mín.</span>
                     <Input
-                      type="number"
-                      min={0}
-                      value={alloc.min_quantity || 0}
-                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } })}
-                      className="w-20 h-8 rounded-lg text-sm"
+                     type="number"
+                     min={0}
+                     value={alloc.min_quantity || 0}
+                     onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } })}
+                     onFocus={(e) => e.target.select()}
+                     className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
                   <Button
@@ -181,6 +183,7 @@ export default function ClientAllocations({ client }) {
             max={product?.quantity || 999}
             value={qty}
             onChange={(e) => setQty(Number(e.target.value))}
+            onFocus={(e) => e.target.select()}
             className="w-24 h-9 rounded-xl text-sm"
             placeholder="Qtd"
             title="Quantidade alocada"
@@ -190,6 +193,7 @@ export default function ClientAllocations({ client }) {
             min={0}
             value={minQty}
             onChange={(e) => setMinQty(Number(e.target.value))}
+            onFocus={(e) => e.target.select()}
             className="w-24 h-9 rounded-xl text-sm"
             placeholder="Qtd Mín."
             title="Quantidade mínima para alerta"
