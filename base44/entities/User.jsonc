@@ -11,6 +11,11 @@
       ],
       "default": "user",
       "description": "Papel do usu\u00e1rio no sistema"
+    },
+    "whatsapp_phone": {
+      "type": "string",
+      "description": "N\u00famero de WhatsApp do representante (ex: +55 (11) 9 1234-5678)"
     }
-  }
+  },
+  "required": []
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Package, Plus, RefreshCw, Users, AlertTriangle } from "lucide-react";
+import { Package, Plus, RefreshCw, Users, AlertTriangle, Phone, MessageCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProductForm from "@/components/stock/ProductForm";
 import ReplenishStock from "@/components/representative/ReplenishStock";
@@ -14,10 +15,51 @@ export default function RepresentativeDashboard() {
   const [showAllocations, setShowAllocations] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneSaved, setPhoneSaved] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me().then((u) => {
+      setCurrentUser(u);
+      setPhoneInput(u.whatsapp_phone || "");
+    }).catch(() => {});
   }, []);
+
+  const formatPhone = (val) => {
+    // Remove tudo exceto + e dígitos
+    let digits = val.replace(/[^\d+]/g, "");
+    // Garante +55 no início
+    if (!digits.startsWith("+")) digits = "+" + digits;
+    // Formata: +55 (xx) x xxxx-xxxx
+    const nums = digits.replace(/\D/g, "");
+    let formatted = "";
+    if (nums.length === 0) return "";
+    formatted = "+" + nums.slice(0, 2); // +55
+    if (nums.length > 2) formatted += " (" + nums.slice(2, 4);
+    if (nums.length > 4) formatted += ") " + nums.slice(4, 5);
+    if (nums.length > 5) formatted += " " + nums.slice(5, 9);
+    if (nums.length > 9) formatted += "-" + nums.slice(9, 13);
+    return formatted;
+  };
+
+  const handlePhoneSave = async () => {
+    await base44.auth.updateMe({ whatsapp_phone: phoneInput });
+    setCurrentUser((u) => ({ ...u, whatsapp_phone: phoneInput }));
+    setPhoneSaved(true);
+    setTimeout(() => setPhoneSaved(false), 2000);
+  };
+
+  const sendWhatsAppAlert = (alertItems) => {
+    const phone = currentUser?.whatsapp_phone?.replace(/\D/g, "");
+    if (!phone) return;
+    const lines = alertItems.map((a) => {
+      const client = clients.find((c) => c.id === a.client_id);
+      return `• *${a.product_name}* — ${client?.name || "Cliente"}: ${a.allocated_quantity} un. (mín. ${a.min_quantity})`;
+    });
+    const text = `⚠️ *Alerta de Estoque Baixo*\n\n${lines.join("\n")}\n\n_ADIFER Ferramentas_`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+  };
 
   const { data: allClients = [] } = useQuery({
     queryKey: ["clients"],
@@ -61,13 +103,33 @@ export default function RepresentativeDashboard() {
   return (
     <div className="min-h-screen bg-background p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Painel do Representante</h1>
           <p className="text-muted-foreground text-sm mt-1">Gerencie estoque dos clientes e produtos</p>
         </div>
         <Button onClick={() => setShowProductForm(true)} className="rounded-xl gap-2">
           <Plus className="w-4 h-4" /> Novo Produto
+        </Button>
+      </div>
+
+      {/* Barra de WhatsApp */}
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6 flex items-center gap-3 flex-wrap">
+        <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />
+        <p className="text-sm font-medium text-green-800 flex-shrink-0">Meu WhatsApp para alertas:</p>
+        <Input
+          value={phoneInput}
+          onChange={(e) => setPhoneInput(formatPhone(e.target.value))}
+          placeholder="+55 (xx) x xxxx-xxxx"
+          className="w-52 h-9 rounded-xl text-sm border-green-300 focus:border-green-500"
+        />
+        <Button
+          size="sm"
+          onClick={handlePhoneSave}
+          className={`rounded-xl gap-1.5 ${phoneSaved ? "bg-green-600 hover:bg-green-600" : "bg-green-600 hover:bg-green-700"}`}
+        >
+          {phoneSaved ? <Check className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+          {phoneSaved ? "Salvo!" : "Salvar"}
         </Button>
       </div>
 
@@ -95,9 +157,20 @@ export default function RepresentativeDashboard() {
       {/* Alertas */}
       {lowStockAllocations.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" /> Estoque Baixo
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" /> Estoque Baixo
+            </h2>
+            {currentUser?.whatsapp_phone && (
+              <Button
+                size="sm"
+                onClick={() => sendWhatsAppAlert(lowStockAllocations)}
+                className="rounded-xl gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <MessageCircle className="w-3.5 h-3.5" /> Notificar via WhatsApp
+              </Button>
+            )}
+          </div>
           <div className="space-y-2">
             {lowStockAllocations.map((a) => {
               const client = clients.find((c) => c.id === a.client_id);
