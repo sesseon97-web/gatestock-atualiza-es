@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProductForm from "@/components/stock/ProductForm";
 import ReplenishStock from "@/components/representative/ReplenishStock";
+import ClientAllocations from "@/components/admin/ClientAllocations";
 
 export default function RepresentativeDashboard() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [showReplenish, setShowReplenish] = useState(false);
+  const [showAllocations, setShowAllocations] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -49,6 +51,11 @@ export default function RepresentativeDashboard() {
   const handleReplenish = (client) => {
     setSelectedClient(client);
     setShowReplenish(true);
+  };
+
+  const handleAllocate = (client) => {
+    setSelectedClient(client);
+    setShowAllocations(true);
   };
 
   return (
@@ -135,9 +142,14 @@ export default function RepresentativeDashboard() {
                     )}
                   </p>
                 </div>
-                <Button size="sm" onClick={() => handleReplenish(client)} className="rounded-xl gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5" /> Repor Estoque
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => handleAllocate(client)} className="rounded-xl gap-1.5">
+                    <Package className="w-3.5 h-3.5" /> Alocar
+                  </Button>
+                  <Button size="sm" onClick={() => handleReplenish(client)} className="rounded-xl gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5" /> Repor
+                  </Button>
+                </div>
               </div>
             );
           })}
@@ -154,6 +166,18 @@ export default function RepresentativeDashboard() {
             <DialogTitle>Novo Produto</DialogTitle>
           </DialogHeader>
           <ProductForm onClose={() => setShowProductForm(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Alocações */}
+      <Dialog open={showAllocations} onOpenChange={setShowAllocations}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Alocar Ferramentas — {selectedClient?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <ClientAllocations client={selectedClient} />
+          )}
         </DialogContent>
       </Dialog>
 
