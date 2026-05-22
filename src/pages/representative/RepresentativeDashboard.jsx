@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Package, Plus, RefreshCw, Users, AlertTriangle, Phone, MessageCircle, Check } from "lucide-react";
+import { Package, Plus, RefreshCw, Users, AlertTriangle, Phone, BellOff, Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProductForm from "@/components/stock/ProductForm";
 import ReplenishStock from "@/components/representative/ReplenishStock";
@@ -17,11 +18,14 @@ export default function RepresentativeDashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [phoneInput, setPhoneInput] = useState("");
   const [phoneSaved, setPhoneSaved] = useState(false);
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [autoAlertSent, setAutoAlertSent] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then((u) => {
       setCurrentUser(u);
       setPhoneInput(u.whatsapp_phone || "");
+      setAlertsEnabled(u.whatsapp_alerts_enabled || false);
     }).catch(() => {});
   }, []);
 
@@ -49,11 +53,17 @@ export default function RepresentativeDashboard() {
     setTimeout(() => setPhoneSaved(false), 2000);
   };
 
-  const sendWhatsAppAlert = (alertItems) => {
+  const handleToggleAlerts = async (val) => {
+    setAlertsEnabled(val);
+    await base44.auth.updateMe({ whatsapp_alerts_enabled: val });
+    setCurrentUser((u) => ({ ...u, whatsapp_alerts_enabled: val }));
+  };
+
+  const sendWhatsAppAlert = (alertItems, clientsList) => {
     const phone = currentUser?.whatsapp_phone?.replace(/\D/g, "");
     if (!phone) return;
     const lines = alertItems.map((a) => {
-      const client = clients.find((c) => c.id === a.client_id);
+      const client = clientsList.find((c) => c.id === a.client_id);
       return `• *${a.product_name}* — ${client?.name || "Cliente"}: ${a.allocated_quantity} un. (mín. ${a.min_quantity})`;
     });
     const text = `⚠️ *Alerta de Estoque Baixo*\n\n${lines.join("\n")}\n\n_ADIFER Ferramentas_`;
@@ -89,6 +99,20 @@ export default function RepresentativeDashboard() {
       (a.min_quantity || 0) > 0 &&
       (a.allocated_quantity || 0) <= (a.min_quantity || 0)
   );
+
+  // Auto-notifica via WhatsApp quando alertas estão ativos e há itens com estoque baixo
+  useEffect(() => {
+    if (
+      alertsEnabled &&
+      currentUser?.whatsapp_phone &&
+      lowStockAllocations.length > 0 &&
+      clients.length > 0 &&
+      !autoAlertSent
+    ) {
+      setAutoAlertSent(true);
+      sendWhatsAppAlert(lowStockAllocations, clients);
+    }
+  }, [alertsEnabled, currentUser, lowStockAllocations, clients, autoAlertSent]);
 
   const handleReplenish = (client) => {
     setSelectedClient(client);
@@ -126,11 +150,24 @@ export default function RepresentativeDashboard() {
         <Button
           size="sm"
           onClick={handlePhoneSave}
-          className={`rounded-xl gap-1.5 ${phoneSaved ? "bg-green-600 hover:bg-green-600" : "bg-green-600 hover:bg-green-700"}`}
+          className="rounded-xl gap-1.5 bg-green-600 hover:bg-green-700"
         >
           {phoneSaved ? <Check className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
           {phoneSaved ? "Salvo!" : "Salvar"}
         </Button>
+
+        {/* Toggle de notificação automática */}
+        <div className="flex items-center gap-2 ml-2 border-l border-green-300 pl-3">
+          {alertsEnabled ? <Bell className="w-4 h-4 text-green-700" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+          <span className={`text-sm font-medium ${alertsEnabled ? "text-green-800" : "text-muted-foreground"}`}>
+            {alertsEnabled ? "Notificações ligadas" : "Notificações desligadas"}
+          </span>
+          <Switch
+            checked={alertsEnabled}
+            onCheckedChange={handleToggleAlerts}
+            disabled={!phoneInput}
+          />
+        </div>
       </div>
 
       {/* Stats */}
@@ -157,20 +194,9 @@ export default function RepresentativeDashboard() {
       {/* Alertas */}
       {lowStockAllocations.length > 0 && (
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" /> Estoque Baixo
-            </h2>
-            {currentUser?.whatsapp_phone && (
-              <Button
-                size="sm"
-                onClick={() => sendWhatsAppAlert(lowStockAllocations)}
-                className="rounded-xl gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-              >
-                <MessageCircle className="w-3.5 h-3.5" /> Notificar via WhatsApp
-              </Button>
-            )}
-          </div>
+          <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" /> Estoque Baixo
+          </h2>
           <div className="space-y-2">
             {lowStockAllocations.map((a) => {
               const client = clients.find((c) => c.id === a.client_id);
