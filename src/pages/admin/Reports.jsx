@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import ReportPDFGenerator from "@/components/admin/ReportPDFGenerator";
+import ReportExcelGenerator from "@/components/admin/ReportExcelGenerator";
 
 // Gera lista dos últimos 12 meses
 function getMonthOptions() {
@@ -99,10 +100,15 @@ export default function Reports() {
           </Select>
         </div>
 
-        {/* PDF export — só aparece quando um cliente específico está selecionado */}
+        {/* Exportações — só aparecem quando um cliente específico está selecionado */}
         {selectedClient !== "all" && selectedClientObj && (
-          <div className="flex items-end pb-0.5">
+          <div className="flex items-end gap-2 pb-0.5">
             <ReportPDFGenerator
+              client={selectedClientObj}
+              orders={filtered}
+              monthLabel={currentMonthLabel}
+            />
+            <ReportExcelGenerator
               client={selectedClientObj}
               orders={filtered}
               monthLabel={currentMonthLabel}
