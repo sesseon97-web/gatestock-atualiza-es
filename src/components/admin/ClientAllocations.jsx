@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Package, AlertTriangle } from "lucide-react";
@@ -6,6 +6,81 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+function AllocationRow({ alloc, products, updateMutation, deleteMutation }) {
+  const prod = products.find((p) => p.id === alloc.product_id);
+  const stock = prod?.quantity || 0;
+
+  const [qtyVal, setQtyVal] = useState(String(alloc.allocated_quantity ?? ""));
+  const [minVal, setMinVal] = useState(String(alloc.min_quantity ?? ""));
+
+  useEffect(() => { setQtyVal(String(alloc.allocated_quantity ?? "")); }, [alloc.allocated_quantity]);
+  useEffect(() => { setMinVal(String(alloc.min_quantity ?? "")); }, [alloc.min_quantity]);
+
+  const commitQty = () => {
+    const num = Number(qtyVal);
+    if (qtyVal !== "" && !isNaN(num) && num >= 1) {
+      updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: num } });
+    } else {
+      setQtyVal(String(alloc.allocated_quantity ?? ""));
+    }
+  };
+
+  const commitMin = () => {
+    const num = Number(minVal);
+    if (minVal !== "" && !isNaN(num) && num >= 0) {
+      updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: num } });
+    } else {
+      setMinVal(String(alloc.min_quantity ?? ""));
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-3 bg-card rounded-xl border border-border p-3 flex-wrap">
+      <Package className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{alloc.product_name}</p>
+        <p className="text-xs text-muted-foreground">Estoque total: {stock} {prod?.unit || "un."}</p>
+        {(alloc.min_quantity || 0) > 0 && stock <= (alloc.min_quantity || 0) && (
+          <p className="text-xs text-amber-600 flex items-center gap-1 mt-0.5">
+            <AlertTriangle className="w-3 h-3" /> Abaixo do mínimo ({alloc.min_quantity})
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-xs text-muted-foreground">Qtd</span>
+          <Input
+            type="number"
+            min={1}
+            max={stock}
+            value={qtyVal}
+            onChange={(e) => setQtyVal(e.target.value)}
+            onBlur={commitQty}
+            className="w-20 h-8 rounded-lg text-sm"
+          />
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-xs text-muted-foreground">Qtd Mín.</span>
+          <Input
+            type="number"
+            min={0}
+            value={minVal}
+            onChange={(e) => setMinVal(e.target.value)}
+            onBlur={commitMin}
+            className="w-20 h-8 rounded-lg text-sm"
+          />
+        </div>
+        <Button
+          variant="ghost" size="icon" className="h-8 w-8 text-destructive flex-shrink-0 mt-4"
+          onClick={() => deleteMutation.mutate(alloc)}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function ClientAllocations({ client }) {
   const queryClient = useQueryClient();
@@ -100,53 +175,15 @@ export default function ClientAllocations({ client }) {
         <p className="text-sm text-muted-foreground">Nenhum produto alocado ainda.</p>
       ) : (
         <div className="space-y-2">
-          {allocations.map((alloc) => {
-            const prod = products.find((p) => p.id === alloc.product_id);
-            const stock = prod?.quantity || 0;
-            return (
-              <div key={alloc.id} className="flex items-start gap-3 bg-card rounded-xl border border-border p-3 flex-wrap">
-                <Package className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{alloc.product_name}</p>
-                  <p className="text-xs text-muted-foreground">Estoque total: {stock} {prod?.unit || "un."}</p>
-                  {(alloc.min_quantity || 0) > 0 && stock <= (alloc.min_quantity || 0) && (
-                    <p className="text-xs text-amber-600 flex items-center gap-1 mt-0.5">
-                      <AlertTriangle className="w-3 h-3" /> Abaixo do mínimo ({alloc.min_quantity})
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-xs text-muted-foreground">Qtd</span>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={stock}
-                      value={alloc.allocated_quantity}
-                      onChange={(e) => { if (e.target.value !== "") updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } }); }}
-                      className="w-20 h-8 rounded-lg text-sm"
-                    />
-                  </div>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-xs text-muted-foreground">Qtd Mín.</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={alloc.min_quantity || 0}
-                      onChange={(e) => { if (e.target.value !== "") updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } }); }}
-                      className="w-20 h-8 rounded-lg text-sm"
-                    />
-                  </div>
-                  <Button
-                    variant="ghost" size="icon" className="h-8 w-8 text-destructive flex-shrink-0 mt-4"
-                    onClick={() => deleteMutation.mutate(alloc)}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+          {allocations.map((alloc) => (
+            <AllocationRow
+              key={alloc.id}
+              alloc={alloc}
+              products={products}
+              updateMutation={updateMutation}
+              deleteMutation={deleteMutation}
+            />
+          ))}
         </div>
       )}
 
