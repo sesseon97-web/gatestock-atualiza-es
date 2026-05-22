@@ -53,6 +53,9 @@ export default function DoorConfirmationClient({ order, orders: ordersProp, clie
     const allAllocations = clientId ? await base44.entities.ClientAllocation.list() : [];
     const allProducts = await base44.entities.Product.list();
 
+    // Track updated allocations to check for low stock after
+    const updatedAllocs = [];
+
     await Promise.all(
       orders.map(async (o) => {
         // Update order status
@@ -69,6 +72,7 @@ export default function DoorConfirmationClient({ order, orders: ordersProp, clie
         if (alloc) {
           const newAllocQty = Math.max(0, (alloc.allocated_quantity || 0) - o.quantity);
           await base44.entities.ClientAllocation.update(alloc.id, { allocated_quantity: newAllocQty });
+          updatedAllocs.push({ ...alloc, allocated_quantity: newAllocQty });
         }
 
         // Update Product stock
@@ -79,6 +83,29 @@ export default function DoorConfirmationClient({ order, orders: ordersProp, clie
         }
       })
     );
+
+    // Check for low stock and notify representative via WhatsApp
+    if (client?.representative_id && updatedAllocs.length > 0) {
+      const lowStockItems = updatedAllocs.filter(
+        (a) => (a.min_quantity || 0) > 0 && a.allocated_quantity <= (a.min_quantity || 0)
+      );
+      if (lowStockItems.length > 0) {
+        try {
+          const allUsers = await base44.entities.User.list();
+          const rep = allUsers.find((u) => u.id === client.representative_id);
+          if (rep?.whatsapp_phone && rep?.whatsapp_alerts_enabled !== false) {
+            const phone = rep.whatsapp_phone.replace(/\D/g, "");
+            const lines = lowStockItems.map(
+              (a) => `• *${a.product_name}* — ${client.name}: ${a.allocated_quantity} un. (mín. ${a.min_quantity})`
+            );
+            const text = `⚠️ *Alerta de Estoque Baixo*\n\n${lines.join("\n")}\n\n_ADIFER Ferramentas_`;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+          }
+        } catch (_) {
+          // Falha silenciosa — não bloqueia o fluxo principal
+        }
+      }
+    }
 
     setStep("opened");
     toast.success("Retirada confirmada!");
