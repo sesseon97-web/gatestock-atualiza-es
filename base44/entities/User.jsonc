@@ -15,11 +15,6 @@
     "whatsapp_phone": {
       "type": "string",
       "description": "N\u00famero de WhatsApp do representante (ex: +55 (11) 9 1234-5678)"
-    },
-    "whatsapp_alerts_enabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Se as notifica\u00e7\u00f5es autom\u00e1ticas via WhatsApp est\u00e3o ativadas"
     }
   },
   "required": []
