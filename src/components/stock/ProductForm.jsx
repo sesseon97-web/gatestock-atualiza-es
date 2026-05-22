@@ -14,8 +14,8 @@ export default function ProductForm({ product, onClose }) {
     name: product?.name || "",
     code: product?.code || "",
     category: product?.category || "Outros",
-    quantity: product?.quantity || 0,
-    min_quantity: product?.min_quantity || 5,
+    quantity: product?.quantity ?? "",
+    min_quantity: product?.min_quantity ?? "",
     unit: product?.unit || "unidade",
     location: product?.location || "",
   });
@@ -43,7 +43,11 @@ export default function ProductForm({ product, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    mutation.mutate(form);
+    mutation.mutate({
+      ...form,
+      quantity: Number(form.quantity) || 0,
+      min_quantity: Number(form.min_quantity) || 0,
+    });
   };
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
@@ -84,11 +88,11 @@ export default function ProductForm({ product, onClose }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Quantidade</Label>
-          <Input type="number" min={0} value={form.quantity} onChange={(e) => update("quantity", Number(e.target.value))} className="rounded-xl" />
+          <Input type="number" min={0} value={form.quantity} onChange={(e) => update("quantity", e.target.value)} className="rounded-xl" />
         </div>
         <div className="space-y-2">
           <Label>Qtd. Mínima</Label>
-          <Input type="number" min={0} value={form.min_quantity} onChange={(e) => update("min_quantity", Number(e.target.value))} className="rounded-xl" />
+          <Input type="number" min={0} value={form.min_quantity} onChange={(e) => update("min_quantity", e.target.value)} className="rounded-xl" />
         </div>
       </div>
       <div className="space-y-2">

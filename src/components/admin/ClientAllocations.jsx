@@ -10,8 +10,8 @@ import { toast } from "sonner";
 export default function ClientAllocations({ client }) {
   const queryClient = useQueryClient();
   const [selectedProduct, setSelectedProduct] = useState("");
-  const [qty, setQty] = useState(1);
-  const [minQty, setMinQty] = useState(0);
+  const [qty, setQty] = useState("");
+  const [minQty, setMinQty] = useState("");
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -73,10 +73,11 @@ export default function ClientAllocations({ client }) {
   const product = products.find((p) => p.id === selectedProduct);
 
   const handleAdd = async () => {
-    if (!selectedProduct || qty < 1) return;
-    // Baixa o estoque do produto ao alocar
+    const qtyNum = Number(qty) || 0;
+    const minQtyNum = Number(minQty) || 0;
+    if (!selectedProduct || qtyNum < 1) return;
     if (product) {
-      const newStock = Math.max(0, (product.quantity || 0) - qty);
+      const newStock = Math.max(0, (product.quantity || 0) - qtyNum);
       await base44.entities.Product.update(product.id, { quantity: newStock });
     }
     addMutation.mutate({
@@ -84,10 +85,11 @@ export default function ClientAllocations({ client }) {
       client_email: client.email,
       product_id: selectedProduct,
       product_name: product?.name || "",
-      allocated_quantity: qty,
-      min_quantity: minQty,
+      allocated_quantity: qtyNum,
+      min_quantity: minQtyNum,
     });
-    setMinQty(0);
+    setQty("");
+    setMinQty("");
   };
 
   return (
@@ -121,7 +123,7 @@ export default function ClientAllocations({ client }) {
                       min={1}
                       max={stock}
                       value={alloc.allocated_quantity}
-                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } })}
+                      onChange={(e) => { if (e.target.value !== "") updateMutation.mutate({ id: alloc.id, alloc, data: { allocated_quantity: Number(e.target.value) } }); }}
                       className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
@@ -131,7 +133,7 @@ export default function ClientAllocations({ client }) {
                       type="number"
                       min={0}
                       value={alloc.min_quantity || 0}
-                      onChange={(e) => updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } })}
+                      onChange={(e) => { if (e.target.value !== "") updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: Number(e.target.value) } }); }}
                       className="w-20 h-8 rounded-lg text-sm"
                     />
                   </div>
@@ -167,7 +169,7 @@ export default function ClientAllocations({ client }) {
             min={1}
             max={product?.quantity || 999}
             value={qty}
-            onChange={(e) => setQty(Number(e.target.value))}
+            onChange={(e) => setQty(e.target.value)}
             className="w-24 h-9 rounded-xl text-sm"
             placeholder="Qtd"
             title="Quantidade alocada"
@@ -176,7 +178,7 @@ export default function ClientAllocations({ client }) {
             type="number"
             min={0}
             value={minQty}
-            onChange={(e) => setMinQty(Number(e.target.value))}
+            onChange={(e) => setMinQty(e.target.value)}
             className="w-24 h-9 rounded-xl text-sm"
             placeholder="Qtd Mín."
             title="Quantidade mínima para alerta"
