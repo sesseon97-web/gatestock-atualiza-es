@@ -20,7 +20,6 @@ export default function ClientDashboard() {
   const [flow, setFlow] = useState(null);
   const [identifiedEmployee, setIdentifiedEmployee] = useState(null);
   const [createdOrders, setCreatedOrders] = useState([]);
-  const [doorOrderIndex, setDoorOrderIndex] = useState(0);
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [showEmployeeList, setShowEmployeeList] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
@@ -65,28 +64,20 @@ export default function ClientDashboard() {
 
   const handleOrdersCreated = (orders) => {
     setCreatedOrders(orders);
-    setDoorOrderIndex(0);
     setFlow("door");
   };
 
   const handleDoorConfirmed = () => {
-    // If there are more orders, advance to next
-    if (doorOrderIndex < createdOrders.length - 1) {
-      setDoorOrderIndex((i) => i + 1);
-    } else {
-      queryClient.invalidateQueries();
-      setFlow(null);
-      setIdentifiedEmployee(null);
-      setCreatedOrders([]);
-      setDoorOrderIndex(0);
-    }
+    queryClient.invalidateQueries();
+    setFlow(null);
+    setIdentifiedEmployee(null);
+    setCreatedOrders([]);
   };
 
   const resetFlow = () => {
     setFlow(null);
     setIdentifiedEmployee(null);
     setCreatedOrders([]);
-    setDoorOrderIndex(0);
   };
 
   if (!myClient) {
@@ -279,22 +270,15 @@ export default function ClientDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Door confirmation dialog — one per order */}
+      {/* Door confirmation dialog — all orders at once */}
       <Dialog open={flow === "door"} onOpenChange={resetFlow}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              Confirmar e Abrir
-              {createdOrders.length > 1 && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  ({doorOrderIndex + 1}/{createdOrders.length})
-                </span>
-              )}
-            </DialogTitle>
+            <DialogTitle>Confirmar e Abrir</DialogTitle>
           </DialogHeader>
-          {flow === "door" && createdOrders[doorOrderIndex] && (
+          {flow === "door" && createdOrders.length > 0 && (
             <DoorConfirmationClient
-              order={createdOrders[doorOrderIndex]}
+              orders={createdOrders}
               client={myClient}
               onConfirmed={handleDoorConfirmed}
             />

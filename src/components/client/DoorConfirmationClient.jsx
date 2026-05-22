@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-export default function DoorConfirmationClient({ order, client, onConfirmed }) {
+// Accepts either a single `order` or an array `orders`
+export default function DoorConfirmationClient({ order, orders: ordersProp, client, onConfirmed }) {
+  const orders = ordersProp || (order ? [order] : []);
   const [step, setStep] = useState("idle"); // idle | opening | opened | error
   const [ipResult, setIpResult] = useState(null);
 
@@ -42,28 +44,41 @@ export default function DoorConfirmationClient({ order, client, onConfirmed }) {
   const handleConfirm = async () => {
     setStep("opening");
 
-    // Trigger IP
+    // Trigger IP once
     const result = await triggerIP();
     setIpResult(result);
 
-    // Update order
-    await base44.entities.StockOrder.update(order.id, {
-      status: "confirmado",
-      door_opened: result.success,
-      confirmed_at: new Date().toISOString(),
-    });
+    // Process all orders
+    const clientId = orders[0]?.client_id;
+    const allAllocations = clientId ? await base44.entities.ClientAllocation.list() : [];
+    const allProducts = await base44.entities.Product.list();
 
-    // Atualiza a alocação do cliente (não o estoque geral)
-    if (order.client_id) {
-      const allAllocations = await base44.entities.ClientAllocation.list();
-      const alloc = allAllocations.find(
-        (a) => a.client_id === order.client_id && a.product_id === order.product_id
-      );
-      if (alloc) {
-        const newQty = Math.max(0, (alloc.allocated_quantity || 0) - order.quantity);
-        await base44.entities.ClientAllocation.update(alloc.id, { allocated_quantity: newQty });
-      }
-    }
+    await Promise.all(
+      orders.map(async (o) => {
+        // Update order status
+        await base44.entities.StockOrder.update(o.id, {
+          status: "confirmado",
+          door_opened: result.success,
+          confirmed_at: new Date().toISOString(),
+        });
+
+        // Update ClientAllocation
+        const alloc = allAllocations.find(
+          (a) => a.client_id === o.client_id && a.product_id === o.product_id
+        );
+        if (alloc) {
+          const newAllocQty = Math.max(0, (alloc.allocated_quantity || 0) - o.quantity);
+          await base44.entities.ClientAllocation.update(alloc.id, { allocated_quantity: newAllocQty });
+        }
+
+        // Update Product stock
+        const product = allProducts.find((p) => p.id === o.product_id);
+        if (product) {
+          const newStock = Math.max(0, (product.quantity || 0) - o.quantity);
+          await base44.entities.Product.update(product.id, { quantity: newStock });
+        }
+      })
+    );
 
     setStep("opened");
     toast.success("Retirada confirmada!");
@@ -74,6 +89,10 @@ export default function DoorConfirmationClient({ order, client, onConfirmed }) {
   const fullUrl = ipConfigured
     ? (client.ip_address.startsWith("http") ? client.ip_address : `http://${client.ip_address}${client.ip_port ? `:${client.ip_port}` : ""}${client.ip_endpoint || "/open"}`)
     : null;
+
+  const summaryText = orders.length === 1
+    ? `${orders[0].quantity}x ${orders[0].product_name}`
+    : orders.map((o) => `${o.quantity}x ${o.product_name}`).join(", ");
 
   return (
     <div className="flex flex-col items-center justify-center py-6">
@@ -92,7 +111,7 @@ export default function DoorConfirmationClient({ order, client, onConfirmed }) {
             <div className="text-center">
               <h3 className="text-xl font-bold text-foreground">Confirmar Retirada</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {order.quantity}x {order.product_name}
+                {summaryText}
               </p>
             </div>
 
