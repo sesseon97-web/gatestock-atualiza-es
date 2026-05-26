@@ -25,12 +25,12 @@ export default function Sidebar({ open, onClose }) {
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="p-5 flex items-center justify-between">
+        <div className="p-5 flex items-center justify-between border-b border-sidebar-border">
           <div className="flex items-center gap-3 flex-1">
             <img
-              src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/87d5329a1_LogoADIFERFerramen.png"
-              alt="ADIFER Ferramentas"
-              className="h-12 w-12 object-cover rounded-full"
+              src="https://media.base44.com/images/public/6a14a4e0cde3835f676a164e/4e5ad93a6_ksc.PNG"
+              alt="KSC"
+              className="h-10 object-contain"
             />
           </div>
           <button onClick={onClose} className="lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground">
@@ -68,9 +68,9 @@ export default function Sidebar({ open, onClose }) {
             <LogOut className="w-4 h-4" />
             Sair
           </button>
-          <div className="rounded-xl bg-sidebar-accent p-3 text-center">
-            <p className="text-xs text-sidebar-foreground/40">ADIFER Ferramentas</p>
-            <p className="text-xs text-sidebar-foreground/30 mt-0.5">Admin</p>
+          <div className="rounded-xl bg-sidebar-accent p-3 text-center border border-sidebar-border">
+            <p className="text-xs text-sidebar-foreground/40">KSC</p>
+            <p className="text-xs text-sidebar-foreground/30 mt-0.5">Controle de Estoque</p>
           </div>
         </div>
       </aside>

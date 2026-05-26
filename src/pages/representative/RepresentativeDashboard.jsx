@@ -66,7 +66,7 @@ export default function RepresentativeDashboard() {
       const client = clientsList.find((c) => c.id === a.client_id);
       return `• *${a.product_name}* — ${client?.name || "Cliente"}: ${a.allocated_quantity} un. (mín. ${a.min_quantity})`;
     });
-    const text = `⚠️ *Alerta de Estoque Baixo*\n\n${lines.join("\n")}\n\n_ADIFER Ferramentas_`;
+    const text = `⚠️ *Alerta de Estoque Baixo*\n\n${lines.join("\n")}\n\n_KSC_`;
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank");
   };

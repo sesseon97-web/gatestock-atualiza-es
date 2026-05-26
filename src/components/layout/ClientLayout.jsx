@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import ClientSecondLogin from "@/pages/client/ClientSecondLogin";
 
-const SESSION_KEY = "adifer_client_session";
+const SESSION_KEY = "ksc_client_session";
 
 // Contexto para compartilhar o cliente autenticado no segundo login
 export const ClientSessionContext = createContext(null);
@@ -74,9 +74,9 @@ export default function ClientLayout() {
         <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 py-3 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <img
-              src="https://media.base44.com/images/public/6a05eb5a8a2aff6653fcfba1/87d5329a1_LogoADIFERFerramen.png"
-              alt="ADIFER Ferramentas"
-              className="h-9 w-9 object-cover rounded-full"
+              src="https://media.base44.com/images/public/6a14a4e0cde3835f676a164e/4e5ad93a6_ksc.PNG"
+              alt="KSC"
+              className="h-7 object-contain"
             />
             <span className="text-sm font-semibold text-sidebar-foreground">{clientSession.name}</span>
           </div>
