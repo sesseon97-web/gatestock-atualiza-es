@@ -1,0 +1,37 @@
+{
+  "name": "TagScan",
+  "type": "object",
+  "properties": {
+    "uid": {
+      "type": "string",
+      "description": "UID da tag lida pelo hardware"
+    },
+    "employee_id": {
+      "type": "string",
+      "description": "ID do funcion\u00e1rio identificado"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Nome do funcion\u00e1rio identificado"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID do cliente ao qual o funcion\u00e1rio pertence"
+    },
+    "scanned_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora da leitura"
+    },
+    "consumed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se esta leitura j\u00e1 foi consumida pelo frontend"
+    }
+  },
+  "required": [
+    "uid",
+    "employee_id",
+    "client_id"
+  ]
+}

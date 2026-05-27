@@ -5,15 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Fingerprint } from "lucide-react";
+import { Fingerprint, Nfc } from "lucide-react";
 
 export default function EmployeeForm({ client, onClose }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [pinCode, setPinCode] = useState("");
+  const [tagUid, setTagUid] = useState("");
 
   const handlePinChange = (v) => {
     if (/^\d{0,4}$/.test(v)) setPinCode(v);
+  };
+
+  const handleTagUidChange = (v) => {
+    // Aceita hex ou alfanumérico, uppercase
+    setTagUid(v.toUpperCase().replace(/[^A-F0-9]/g, "").slice(0, 20));
   };
 
   const mutation = useMutation({
@@ -22,7 +28,8 @@ export default function EmployeeForm({ client, onClose }) {
         name,
         client_id: client.id,
         client_email: client.email,
-        pin_code: pinCode,
+        pin_code: pinCode || undefined,
+        tag_uid: tagUid || undefined,
         active: true,
       });
     },
@@ -39,7 +46,11 @@ export default function EmployeeForm({ client, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    if (pinCode.length !== 4) {
+    if (!pinCode && !tagUid) {
+      toast.error("Informe ao menos um método de acesso: PIN ou UID da Tag.");
+      return;
+    }
+    if (pinCode && pinCode.length !== 4) {
       toast.error("O PIN deve ter exatamente 4 dígitos.");
       return;
     }
@@ -63,19 +74,44 @@ export default function EmployeeForm({ client, onClose }) {
       <div className="space-y-1.5">
         <Label className="flex items-center gap-2">
           <Fingerprint className="w-4 h-4 text-primary" />
-          Código PIN de Acesso * (4 dígitos)
+          Código PIN de Acesso (4 dígitos)
         </Label>
         <Input
           value={pinCode}
           onChange={(e) => handlePinChange(e.target.value)}
-          required
           placeholder="Ex: 1234"
           className="rounded-xl font-mono tracking-widest text-center text-lg"
           maxLength={4}
           inputMode="numeric"
         />
         <p className="text-xs text-muted-foreground">
-          O funcionário usará este PIN para se identificar antes de cada retirada.
+          Opcional se usar Tag RFID/NFC.
+        </p>
+      </div>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs text-muted-foreground">
+          <span className="bg-background px-2">ou</span>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="flex items-center gap-2">
+          <Nfc className="w-4 h-4 text-primary" />
+          UID da Tag RFID/NFC
+        </Label>
+        <Input
+          value={tagUid}
+          onChange={(e) => handleTagUidChange(e.target.value)}
+          placeholder="Ex: A1B2C3D4"
+          className="rounded-xl font-mono tracking-widest text-center text-lg uppercase"
+          maxLength={20}
+        />
+        <p className="text-xs text-muted-foreground">
+          Código hexadecimal da tag. O leitor enviará este código automaticamente.
         </p>
       </div>
 
@@ -83,7 +119,7 @@ export default function EmployeeForm({ client, onClose }) {
         <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">Cancelar</Button>
         <Button
           type="submit"
-          disabled={mutation.isPending || !name.trim() || pinCode.length !== 4}
+          disabled={mutation.isPending || !name.trim()}
           className="rounded-xl"
         >
           {mutation.isPending ? "Cadastrando..." : "Cadastrar Funcionário"}

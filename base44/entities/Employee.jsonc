@@ -18,6 +18,10 @@
       "type": "string",
       "description": "C\u00f3digo PIN de 4 d\u00edgitos para acesso r\u00e1pido na tela do cliente"
     },
+    "tag_uid": {
+      "type": "string",
+      "description": "UID da tag RFID/NFC do funcion\u00e1rio para acesso sem PIN"
+    },
     "active": {
       "type": "boolean",
       "default": true,

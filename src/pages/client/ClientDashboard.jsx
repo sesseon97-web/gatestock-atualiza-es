@@ -247,6 +247,7 @@ export default function ClientDashboard() {
         onClose={resetFlow}
         employees={employees}
         onEmployeeIdentified={handleEmployeeIdentified}
+        clientId={myClient?.id}
       />
 
       {/* Cart + Checkout Dialog */}
