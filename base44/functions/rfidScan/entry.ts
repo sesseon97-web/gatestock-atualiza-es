@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const uid = (body.uid || "").trim().toUpperCase();
+    const clientId = (body.client_id || "").trim();
 
     if (!uid) {
       return Response.json({ ok: false, error: "UID não informado" }, { status: 400 });
