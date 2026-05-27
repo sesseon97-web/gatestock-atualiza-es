@@ -21,7 +21,9 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
+    console.log("[rfidScan] Body recebido:", JSON.stringify(body));
     const uid = (body.uid || "").trim().toUpperCase();
+    console.log("[rfidScan] UID processado:", uid);
 
     if (!uid) {
       return Response.json({ ok: false, error: "UID não informado" }, { status: 400 });
