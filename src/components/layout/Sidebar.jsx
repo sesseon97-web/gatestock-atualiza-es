@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Package, ClipboardList, X, Users, LogOut, BarChart2, Warehouse } from "lucide-react";
+import { LayoutDashboard, Package, ClipboardList, X, Users, LogOut, BarChart2, Warehouse, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 
@@ -7,6 +7,7 @@ const navItems = [
   { path: "/", label: "Painel", icon: LayoutDashboard },
   { path: "/produtos", label: "Produtos", icon: Package },
   { path: "/clientes", label: "Clientes", icon: Users },
+  { path: "/representantes", label: "Representantes", icon: UserCheck },
   { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
   { path: "/estoque", label: "Estoque", icon: Warehouse },
   { path: "/relatorios", label: "Relatórios", icon: BarChart2 },

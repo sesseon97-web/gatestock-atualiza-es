@@ -23,6 +23,7 @@ import ClientDashboard from '@/pages/client/ClientDashboard';
 import EmployeeDashboard from '@/pages/employee/EmployeeDashboard';
 import Reports from '@/pages/admin/Reports';
 import Stock from '@/pages/admin/Stock';
+import Representatives from '@/pages/admin/Representatives';
 import RepresentativeDashboard from '@/pages/representative/RepresentativeDashboard';
 
 const AuthenticatedApp = () => {
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
 
             <Route path="/relatorios" element={<Reports />} />
             <Route path="/estoque" element={<Stock />} />
+            <Route path="/representantes" element={<Representatives />} />
           </Route>
         ) : isRepresentante ? (
           <Route path="/" element={<RepresentativeDashboard />} />
