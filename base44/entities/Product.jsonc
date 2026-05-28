@@ -12,20 +12,12 @@
     },
     "category": {
       "type": "string",
-      "enum": [
-        "Eletr\u00f4nicos",
-        "Ferramentas",
-        "Material de Escrit\u00f3rio",
-        "Limpeza",
-        "EPI",
-        "Outros"
-      ],
       "description": "Categoria do produto"
     },
     "quantity": {
       "type": "number",
       "default": 0,
-      "description": "Quantidade em estoque"
+      "description": "Quantidade em estoque (dep\u00f3sito)"
     },
     "min_quantity": {
       "type": "number",
@@ -44,9 +36,13 @@
       "default": "unidade",
       "description": "Unidade de medida"
     },
-    "location": {
+    "manufacturer_name": {
       "type": "string",
-      "description": "Localiza\u00e7\u00e3o no estoque"
+      "description": "Nome do fabricante"
+    },
+    "manufacturer_code": {
+      "type": "string",
+      "description": "C\u00f3digo do fabricante"
     },
     "image_url": {
       "type": "string",

@@ -101,9 +101,10 @@ export default function Products() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <Badge variant="secondary" className="text-xs">{product.category || "Outros"}</Badge>
-                  {product.location && <Badge variant="outline" className="text-xs">{product.location}</Badge>}
+                  {product.manufacturer_name && <Badge variant="outline" className="text-xs">{product.manufacturer_name}</Badge>}
+                  {product.manufacturer_code && <Badge variant="outline" className="text-xs">Fab: {product.manufacturer_code}</Badge>}
                 </div>
                 <div className="flex items-end justify-between">
                   <div>

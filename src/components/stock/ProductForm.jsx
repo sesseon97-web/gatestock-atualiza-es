@@ -14,10 +14,9 @@ export default function ProductForm({ product, onClose }) {
     name: product?.name || "",
     code: product?.code || "",
     category: product?.category || "Outros",
-    quantity: product?.quantity ?? "",
-    min_quantity: product?.min_quantity ?? "",
     unit: product?.unit || "unidade",
-    location: product?.location || "",
+    manufacturer_name: product?.manufacturer_name || "",
+    manufacturer_code: product?.manufacturer_code || "",
   });
 
   const queryClient = useQueryClient();
@@ -43,11 +42,7 @@ export default function ProductForm({ product, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    mutation.mutate({
-      ...form,
-      quantity: Number(form.quantity) || 0,
-      min_quantity: Number(form.min_quantity) || 0,
-    });
+    mutation.mutate({ ...form });
   };
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
@@ -87,17 +82,13 @@ export default function ProductForm({ product, onClose }) {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Quantidade</Label>
-          <Input type="number" min={0} value={form.quantity} onChange={(e) => update("quantity", e.target.value)} className="rounded-xl" />
+          <Label>Nome do Fabricante</Label>
+          <Input value={form.manufacturer_name} onChange={(e) => update("manufacturer_name", e.target.value)} placeholder="Ex: Bosch" className="rounded-xl" />
         </div>
         <div className="space-y-2">
-          <Label>Qtd. Mínima</Label>
-          <Input type="number" min={0} value={form.min_quantity} onChange={(e) => update("min_quantity", e.target.value)} className="rounded-xl" />
+          <Label>Código do Fabricante</Label>
+          <Input value={form.manufacturer_code} onChange={(e) => update("manufacturer_code", e.target.value)} placeholder="Ex: BOS-4521" className="rounded-xl" />
         </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Localização</Label>
-        <Input value={form.location} onChange={(e) => update("location", e.target.value)} placeholder="Ex: Prateleira A3" className="rounded-xl" />
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">Cancelar</Button>
