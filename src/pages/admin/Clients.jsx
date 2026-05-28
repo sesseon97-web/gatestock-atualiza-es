@@ -86,6 +86,7 @@ export default function Clients() {
                     </div>
                     <p className="text-sm text-muted-foreground">{client.email}</p>
                     {client.company && <p className="text-xs text-muted-foreground">{client.company}</p>}
+                    <p className="text-xs text-muted-foreground/50 font-mono mt-0.5">ID: {client.id}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
