@@ -2,9 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * Endpoint para o hardware enviar a leitura de uma tag RFID/NFC.
- *
  * Método: POST
- * Body JSON: { "uid": "AABBCCDD" }
+ * Body JSON: { "uid": "AABBCCDD", "client_id": "..." }
  */
 
 Deno.serve(async (req) => {
@@ -27,11 +26,11 @@ Deno.serve(async (req) => {
     console.log("[rfidScan] UID processado:", uid, "| client_id:", clientId);
 
     if (!uid) {
-      return Response.json({ ok: false, error: "UID não informado" }, { status: 400 });
+      return Response.json({ ok: false, error: "UID não informado" }, { status: 400, headers: { "Access-Control-Allow-Origin": "*" } });
     }
 
     if (!clientId) {
-      return Response.json({ ok: false, error: "client_id não informado" }, { status: 400 });
+      return Response.json({ ok: false, error: "client_id não informado" }, { status: 400, headers: { "Access-Control-Allow-Origin": "*" } });
     }
 
     // Busca funcionário com esta tag UID vinculado ao cliente
@@ -44,8 +43,17 @@ Deno.serve(async (req) => {
     const employee = employees[0] || null;
 
     if (!employee) {
+      // Funcionário não encontrado — grava para possível captura de UID no modo registro
+      await base44.asServiceRole.entities.TagScan.create({
+        uid,
+        employee_id: "__registro__",
+        employee_name: "__registro__",
+        client_id: clientId,
+        scanned_at: new Date().toISOString(),
+        consumed: false,
+      });
       return Response.json(
-        { ok: false, error: "Nenhum funcionário encontrado com esta tag para este cliente" },
+        { ok: false, error: "Nenhum funcionário encontrado com esta tag para este cliente", uid_captured: true },
         { status: 404, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }

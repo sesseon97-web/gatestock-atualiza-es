@@ -1,26 +1,64 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Fingerprint, Nfc } from "lucide-react";
+import { Fingerprint, Nfc, Scan, X, CheckCircle2, Loader2 } from "lucide-react";
 
 export default function EmployeeForm({ client, onClose }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [pinCode, setPinCode] = useState("");
   const [tagUid, setTagUid] = useState("");
+  const [listeningUid, setListeningUid] = useState(false);
+  const pollingRef = useRef(null);
 
   const handlePinChange = (v) => {
     if (/^\d{0,4}$/.test(v)) setPinCode(v);
   };
 
   const handleTagUidChange = (v) => {
-    // Aceita hex ou alfanumérico, uppercase
-    setTagUid(v.toUpperCase().replace(/[^A-F0-9]/g, "").slice(0, 20));
+    setTagUid(v.toUpperCase().slice(0, 20));
   };
+
+  const startListening = () => {
+    setListeningUid(true);
+    setTagUid("");
+
+    // Polling a cada 2s buscando TagScans com employee_id == "__registro__" não consumidos
+    pollingRef.current = setInterval(async () => {
+      try {
+        const scans = await base44.entities.TagScan.filter(
+          { employee_id: "__registro__", consumed: false },
+          "-created_date",
+          1
+        );
+        if (scans && scans.length > 0) {
+          const scan = scans[0];
+          // Marca como consumido
+          await base44.entities.TagScan.update(scan.id, { consumed: true });
+          setTagUid(scan.uid);
+          setListeningUid(false);
+          clearInterval(pollingRef.current);
+          toast.success("UID capturado: " + scan.uid);
+        }
+      } catch (err) {
+        // silencioso
+      }
+    }, 2000);
+  };
+
+  const stopListening = () => {
+    setListeningUid(false);
+    clearInterval(pollingRef.current);
+  };
+
+  // Limpa o polling ao desmontar
+  useEffect(() => {
+    return () => clearInterval(pollingRef.current);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -103,15 +141,51 @@ export default function EmployeeForm({ client, onClose }) {
           <Nfc className="w-4 h-4 text-primary" />
           UID da Tag RFID/NFC
         </Label>
-        <Input
-          value={tagUid}
-          onChange={(e) => handleTagUidChange(e.target.value)}
-          placeholder="Ex: A1B2C3D4"
-          className="rounded-xl font-mono tracking-widest text-center text-lg uppercase"
-          maxLength={20}
-        />
+
+        {/* Botão de captura automática */}
+        {!listeningUid ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full rounded-xl gap-2 border-dashed border-primary/50 text-primary hover:bg-primary/5"
+            onClick={startListening}
+          >
+            <Scan className="w-4 h-4" />
+            Registrar via leitura do hardware
+          </Button>
+        ) : (
+          <div className="rounded-xl border border-primary bg-primary/5 p-4 flex flex-col items-center gap-3">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            <p className="text-sm font-medium text-primary">Aguardando leitura da tag...</p>
+            <p className="text-xs text-muted-foreground">Aproxime a tag RFID/NFC do leitor</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={stopListening}
+              className="gap-1 text-muted-foreground text-xs"
+            >
+              <X className="w-3 h-3" /> Cancelar
+            </Button>
+          </div>
+        )}
+
+        {/* Campo manual + indicador de sucesso */}
+        <div className="relative">
+          <Input
+            value={tagUid}
+            onChange={(e) => handleTagUidChange(e.target.value)}
+            placeholder="Ou digite manualmente: A1B2C3D4"
+            className="rounded-xl font-mono tracking-widest text-center text-lg uppercase pr-9"
+            maxLength={20}
+            disabled={listeningUid}
+          />
+          {tagUid && !listeningUid && (
+            <CheckCircle2 className="w-4 h-4 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" />
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">
-          Código hexadecimal da tag. O leitor enviará este código automaticamente.
+          Use o botão acima para capturar automaticamente via hardware, ou digite o código manualmente.
         </p>
       </div>
 
