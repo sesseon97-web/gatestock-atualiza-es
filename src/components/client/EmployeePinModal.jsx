@@ -44,6 +44,14 @@ export default function EmployeePinModal({ open, onClose, employees, onEmployeeI
 
         if (scans && scans.length > 0) {
           const scan = scans[0];
+
+          // Ignora scans de registro (tag desconhecida)
+          if (scan.employee_id === "__registro__") {
+            await base44.entities.TagScan.update(scan.id, { consumed: true });
+            triggerError("Tag não cadastrada. Use o PIN ou cadastre a tag.");
+            return;
+          }
+
           // Marca como consumida imediatamente
           await base44.entities.TagScan.update(scan.id, { consumed: true });
 
