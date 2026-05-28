@@ -51,7 +51,6 @@ export default function DoorConfirmationClient({ order, orders: ordersProp, clie
     // Process all orders
     const clientId = orders[0]?.client_id;
     const allAllocations = clientId ? await base44.entities.ClientAllocation.list() : [];
-    const allProducts = await base44.entities.Product.list();
 
     await Promise.all(
       orders.map(async (o) => {
@@ -71,12 +70,8 @@ export default function DoorConfirmationClient({ order, orders: ordersProp, clie
           await base44.entities.ClientAllocation.update(alloc.id, { allocated_quantity: newAllocQty });
         }
 
-        // Update Product stock
-        const product = allProducts.find((p) => p.id === o.product_id);
-        if (product) {
-          const newStock = Math.max(0, (product.quantity || 0) - o.quantity);
-          await base44.entities.Product.update(product.id, { quantity: newStock });
-        }
+        // Estoque geral (Product.quantity) NÃO é alterado na retirada do cliente.
+        // A baixa no estoque geral acontece apenas quando o produto é alocado ao cliente.
       })
     );
 
