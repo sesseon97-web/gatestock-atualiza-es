@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     const uid = (body.uid || "").trim().toUpperCase();
     const clientId = (body.client_id || "").trim();
 
-    console.log("[rfidScan] uid:", uid, "client_id:", clientId);
+    console.log("[rfidScanV2] uid:", uid, "client_id:", clientId);
 
     if (!uid || !clientId) {
       return Response.json(
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         scanned_at: new Date().toISOString(),
         consumed: false,
       });
-      console.log("[rfidScan] Tag não cadastrada, gravado como __registro__");
+      console.log("[rfidScanV2] Tag não cadastrada, gravado como __registro__");
       return Response.json(
         { ok: false, error: "Nenhum funcionário encontrado com esta tag", uid_captured: true },
         { status: 404, headers: { "Access-Control-Allow-Origin": "*" } }
@@ -59,14 +59,14 @@ Deno.serve(async (req) => {
       consumed: false,
     });
 
-    console.log("[rfidScan] Funcionário identificado:", employee.name);
+    console.log("[rfidScanV2] Funcionário identificado:", employee.name);
 
     return Response.json(
       { ok: true, employee_name: employee.name },
       { headers: { "Access-Control-Allow-Origin": "*" } }
     );
   } catch (error) {
-    console.log("[rfidScan] Erro:", error.message);
+    console.log("[rfidScanV2] Erro:", error.message);
     return Response.json(
       { ok: false, error: error.message },
       { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
