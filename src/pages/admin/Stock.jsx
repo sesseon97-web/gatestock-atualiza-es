@@ -1,13 +1,27 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
-import { Warehouse, Package, ChevronDown, ChevronUp, Users, AlertTriangle, Search } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Warehouse, Package, ChevronDown, ChevronUp, Users, AlertTriangle, Search, Pencil, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function Stock() {
   const [search, setSearch] = useState("");
   const [expandedProduct, setExpandedProduct] = useState(null);
+  const [editingQty, setEditingQty] = useState(null); // { productId, value }
+
+  const queryClient = useQueryClient();
+
+  const updateQtyMutation = useMutation({
+    mutationFn: ({ id, quantity }) => base44.entities.Product.update(id, { quantity }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Quantidade atualizada!");
+      setEditingQty(null);
+    },
+  });
 
   const { data: products = [], isLoading: loadingProducts } = useQuery({
     queryKey: ["products"],
@@ -107,11 +121,48 @@ export default function Stock() {
 
                   <div className="flex items-center gap-6">
                     {/* Estoque geral (disponível no depósito) */}
-                    <div className="text-center">
+                    <div className="text-center" onClick={(e) => e.stopPropagation()}>
                       <p className="text-xs text-muted-foreground">Depósito</p>
-                      <p className={`text-2xl font-bold ${isLow ? "text-destructive" : "text-foreground"}`}>
-                        {stockGeral}
-                      </p>
+                      {editingQty?.productId === product.id ? (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingQty.value}
+                            onChange={(e) => setEditingQty({ ...editingQty, value: e.target.value })}
+                            className="w-20 h-8 text-center text-sm rounded-lg"
+                            autoFocus
+                          />
+                          <Button
+                            size="icon"
+                            className="h-8 w-8 rounded-lg"
+                            onClick={() => updateQtyMutation.mutate({ id: product.id, quantity: Number(editingQty.value) })}
+                            disabled={updateQtyMutation.isPending}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 rounded-lg"
+                            onClick={() => setEditingQty(null)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 justify-center">
+                          <p className={`text-2xl font-bold ${isLow ? "text-destructive" : "text-foreground"}`}>
+                            {stockGeral}
+                          </p>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingQty({ productId: product.id, value: stockGeral }); }}
+                            className="text-muted-foreground hover:text-foreground transition-colors ml-1"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">{product.unit || "un."}</p>
                     </div>
 
