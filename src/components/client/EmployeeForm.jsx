@@ -31,7 +31,7 @@ export default function EmployeeForm({ client, onClose }) {
     pollingRef.current = setInterval(async () => {
       try {
         const scans = await base44.entities.TagScan.filter(
-          { employee_id: "__registro__", consumed: false },
+          { employee_id: "__registro__", client_id: client.id, consumed: false },
           "-created_date",
           1
         );
