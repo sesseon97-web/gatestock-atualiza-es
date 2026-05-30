@@ -13,9 +13,11 @@ function AllocationRow({ alloc, products, updateMutation, deleteMutation }) {
 
   const [qtyVal, setQtyVal] = useState(String(alloc.allocated_quantity ?? ""));
   const [minVal, setMinVal] = useState(String(alloc.min_quantity ?? ""));
+  const [priceVal, setPriceVal] = useState(String(alloc.sale_price ?? ""));
 
   useEffect(() => { setQtyVal(String(alloc.allocated_quantity ?? "")); }, [alloc.allocated_quantity]);
   useEffect(() => { setMinVal(String(alloc.min_quantity ?? "")); }, [alloc.min_quantity]);
+  useEffect(() => { setPriceVal(String(alloc.sale_price ?? "")); }, [alloc.sale_price]);
 
   const commitQty = () => {
     const num = Number(qtyVal);
@@ -32,6 +34,15 @@ function AllocationRow({ alloc, products, updateMutation, deleteMutation }) {
       updateMutation.mutate({ id: alloc.id, alloc, data: { min_quantity: num } });
     } else {
       setMinVal(String(alloc.min_quantity ?? ""));
+    }
+  };
+
+  const commitPrice = () => {
+    const num = Number(priceVal);
+    if (priceVal !== "" && !isNaN(num) && num >= 0) {
+      updateMutation.mutate({ id: alloc.id, alloc, data: { sale_price: num } });
+    } else {
+      setPriceVal(String(alloc.sale_price ?? ""));
     }
   };
 
@@ -71,6 +82,19 @@ function AllocationRow({ alloc, products, updateMutation, deleteMutation }) {
             className="w-20 h-8 rounded-lg text-sm"
           />
         </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-xs text-muted-foreground">Preço (R$)</span>
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            value={priceVal}
+            onChange={(e) => setPriceVal(e.target.value)}
+            onBlur={commitPrice}
+            className="w-24 h-8 rounded-lg text-sm"
+            placeholder="0,00"
+          />
+        </div>
         <Button
           variant="ghost" size="icon" className="h-8 w-8 text-destructive flex-shrink-0 mt-4"
           onClick={() => deleteMutation.mutate(alloc)}
@@ -87,6 +111,7 @@ export default function ClientAllocations({ client }) {
   const [selectedProduct, setSelectedProduct] = useState("");
   const [qty, setQty] = useState("");
   const [minQty, setMinQty] = useState("");
+  const [salePrice, setSalePrice] = useState("");
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -162,9 +187,11 @@ export default function ClientAllocations({ client }) {
       product_name: product?.name || "",
       allocated_quantity: qtyNum,
       min_quantity: minQtyNum,
+      sale_price: Number(salePrice) || 0,
     });
     setQty("");
     setMinQty("");
+    setSalePrice("");
   };
 
   return (
@@ -219,6 +246,16 @@ export default function ClientAllocations({ client }) {
             className="w-24 h-9 rounded-xl text-sm"
             placeholder="Qtd Mín."
             title="Quantidade mínima para alerta"
+          />
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            value={salePrice}
+            onChange={(e) => setSalePrice(e.target.value)}
+            className="w-28 h-9 rounded-xl text-sm"
+            placeholder="Preço R$"
+            title="Preço de venda para este cliente"
           />
           <Button size="sm" onClick={handleAdd} disabled={!selectedProduct} className="rounded-xl gap-1 h-9">
             <Plus className="w-3.5 h-3.5" /> Alocar
