@@ -40,6 +40,11 @@ export default function Reports() {
     queryFn: () => base44.entities.StockOrder.list("-created_date", 500),
   });
 
+  const { data: allAllocations = [] } = useQuery({
+    queryKey: ["allocations-report"],
+    queryFn: () => base44.entities.ClientAllocation.list(),
+  });
+
   // Filtra por mês
   const monthFiltered = useMemo(() => {
     return orders.filter((o) => {
@@ -61,6 +66,79 @@ export default function Reports() {
 
   const selectedClientObj = clients.find((c) => c.id === selectedClient);
   const currentMonthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
+
+  // Alocações do cliente selecionado (para pegar sale_price)
+  const clientAllocations = useMemo(() => {
+    if (selectedClient === "all") return allAllocations;
+    return allAllocations.filter((a) => a.client_id === selectedClient);
+  }, [allAllocations, selectedClient]);
+
+  const getPriceForProduct = (productId, productName) => {
+    const alloc = clientAllocations.find(
+      (a) => a.product_id === productId || a.product_name === productName
+    );
+    return alloc?.sale_price || 0;
+  };
+
+  // Resumo por produto com preço, total e consumo médio
+  const productSummary = useMemo(() => {
+    const map = {};
+    // Busca todos os meses disponíveis para calcular média
+    const allConfirmedRetiradas = orders.filter(
+      (o) => o.type === "retirada" && o.status !== "cancelado" &&
+      (selectedClient === "all" || o.client_id === selectedClient)
+    );
+    // Meses com dados
+    const monthsWithData = new Set(
+      allConfirmedRetiradas.map((o) => {
+        const d = new Date(o.created_date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      })
+    );
+    const totalMonths = Math.max(monthsWithData.size, 1);
+
+    allConfirmedRetiradas.forEach((o) => {
+      const key = o.product_id || o.product_name;
+      if (!map[key]) {
+        map[key] = {
+          product_id: o.product_id,
+          product_name: o.product_name,
+          totalAllMonths: 0,
+        };
+      }
+      map[key].totalAllMonths += o.quantity || 0;
+    });
+
+    // Retiradas e devoluções do mês selecionado
+    const retiradaMonth = {};
+    const devolucaoMonth = {};
+    filtered.filter((o) => o.status !== "cancelado").forEach((o) => {
+      const key = o.product_id || o.product_name;
+      if (o.type === "retirada") retiradaMonth[key] = (retiradaMonth[key] || 0) + (o.quantity || 0);
+      else devolucaoMonth[key] = (devolucaoMonth[key] || 0) + (o.quantity || 0);
+    });
+
+    const allKeys = new Set([...Object.keys(retiradaMonth), ...Object.keys(devolucaoMonth), ...Object.keys(map)]);
+    return [...allKeys].map((key) => {
+      const entry = map[key] || {};
+      const productName = entry.product_name || key;
+      const productId = entry.product_id;
+      const ret = retiradaMonth[key] || 0;
+      const dev = devolucaoMonth[key] || 0;
+      const price = getPriceForProduct(productId, productName);
+      const totalValue = ret * price;
+      const avgMonthly = entry.totalAllMonths ? (entry.totalAllMonths / totalMonths) : 0;
+      return { productName, ret, dev, price, totalValue, avgMonthly };
+    }).filter((r) => r.ret > 0 || r.dev > 0).sort((a, b) => b.ret - a.ret);
+  }, [filtered, orders, selectedClient, clientAllocations]);
+
+  const grandTotal = useMemo(
+    () => productSummary.reduce((sum, r) => sum + r.totalValue, 0),
+    [productSummary]
+  );
+
+  const formatCurrency = (v) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
     <div className="space-y-6">
@@ -107,11 +185,15 @@ export default function Reports() {
               client={selectedClientObj}
               orders={filtered}
               monthLabel={currentMonthLabel}
+              productSummary={productSummary}
+              grandTotal={grandTotal}
             />
             <ReportExcelGenerator
               client={selectedClientObj}
               orders={filtered}
               monthLabel={currentMonthLabel}
+              productSummary={productSummary}
+              grandTotal={grandTotal}
             />
           </div>
         )}
@@ -146,6 +228,72 @@ export default function Reports() {
             <p className="text-2xl font-bold">{totalDevolucoes}</p>
           </div>
         </div>
+      </div>
+
+      {/* Product Summary Table */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="p-5 border-b border-border">
+          <h3 className="font-semibold text-foreground">
+            Resumo por Produto
+            <span className="ml-2 text-sm font-normal text-muted-foreground capitalize">— {currentMonthLabel}</span>
+          </h3>
+        </div>
+        {productSummary.length === 0 ? (
+          <div className="p-10 text-center text-muted-foreground">Nenhum pedido confirmado neste período</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50 text-muted-foreground text-xs uppercase">
+                  <th className="text-left px-5 py-3">Produto</th>
+                  <th className="text-center px-4 py-3">Retiradas</th>
+                  <th className="text-center px-4 py-3">Devoluções</th>
+                  <th className="text-right px-4 py-3">Vl. Unitário</th>
+                  <th className="text-right px-4 py-3">Vl. Total</th>
+                  <th className="text-right px-4 py-3">Média Mensal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {productSummary.map((row, i) => (
+                  <tr key={i} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-3 font-medium">{row.productName}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center justify-center w-8 h-6 rounded bg-primary/10 text-primary text-xs font-semibold">{row.ret}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center justify-center w-8 h-6 rounded bg-green-500/10 text-green-600 text-xs font-semibold">{row.dev}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {row.price > 0 ? formatCurrency(row.price) : <span className="text-xs italic">sem preço</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold">
+                      {row.price > 0 ? formatCurrency(row.totalValue) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">
+                      {row.avgMonthly.toFixed(1)} un/mês
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-primary/5 border-t-2 border-primary/20 font-bold">
+                  <td className="px-5 py-4 text-foreground">Total do Mês</td>
+                  <td className="px-4 py-4 text-center text-primary">
+                    {productSummary.reduce((s, r) => s + r.ret, 0)}
+                  </td>
+                  <td className="px-4 py-4 text-center text-green-600">
+                    {productSummary.reduce((s, r) => s + r.dev, 0)}
+                  </td>
+                  <td className="px-4 py-4" />
+                  <td className="px-4 py-4 text-right text-lg text-primary">
+                    {formatCurrency(grandTotal)}
+                  </td>
+                  <td className="px-4 py-4" />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Orders table */}

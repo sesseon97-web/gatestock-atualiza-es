@@ -3,7 +3,7 @@ import { FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatInTimeZone } from "date-fns-tz";
 
-export default function ReportExcelGenerator({ client, orders, monthLabel }) {
+export default function ReportExcelGenerator({ client, orders, monthLabel, productSummary = [], grandTotal = 0 }) {
   const [loading, setLoading] = useState(false);
 
   const generate = () => {
@@ -116,6 +116,41 @@ export default function ReportExcelGenerator({ client, orders, monthLabel }) {
       <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
       <Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/>
     </Style>
+    <!-- Moeda -->
+    <Style ss:ID="currency">
+      <Font ss:Size="11" ss:Color="#1E1E1E" ss:FontName="Calibri"/>
+      <NumberFormat ss:Format="&quot;R$&quot; #,##0.00"/>
+      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9E1F2"/></Borders>
+    </Style>
+    <Style ss:ID="currencyOdd">
+      <Font ss:Size="11" ss:Color="#1E1E1E" ss:FontName="Calibri"/>
+      <NumberFormat ss:Format="&quot;R$&quot; #,##0.00"/>
+      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+      <Interior ss:Color="#EEF2FB" ss:Pattern="Solid"/>
+      <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9E1F2"/></Borders>
+    </Style>
+    <!-- Total row -->
+    <Style ss:ID="totalLabel">
+      <Font ss:Bold="1" ss:Size="12" ss:Color="#FFFFFF" ss:FontName="Calibri"/>
+      <Interior ss:Color="#1E3A5F" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="totalNum">
+      <Font ss:Bold="1" ss:Size="12" ss:Color="#FFFFFF" ss:FontName="Calibri"/>
+      <Interior ss:Color="#1E3A5F" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="totalCurrency">
+      <Font ss:Bold="1" ss:Size="12" ss:Color="#FFFFFF" ss:FontName="Calibri"/>
+      <NumberFormat ss:Format="&quot;R$&quot; #,##0.00"/>
+      <Interior ss:Color="#1E3A5F" ss:Pattern="Solid"/>
+      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="totalEmpty">
+      <Interior ss:Color="#1E3A5F" ss:Pattern="Solid"/>
+    </Style>
     <!-- Linha vazia -->
     <Style ss:ID="empty">
       <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
@@ -155,24 +190,21 @@ export default function ReportExcelGenerator({ client, orders, monthLabel }) {
     });
 
     // ---- ABA 2: Resumo por produto ----
-    const productMap = {};
-    orders.forEach((o) => {
-      const name = o.product_name || "Sem nome";
-      if (!productMap[name]) productMap[name] = { retiradas: 0, devolucoes: 0 };
-      if (o.type === "retirada") productMap[name].retiradas += o.quantity ?? 0;
-      else productMap[name].devolucoes += o.quantity ?? 0;
-    });
-
-    const summaryRows = Object.entries(productMap).map(([name, v], i) => {
+    const summaryRows = productSummary.map((row, i) => {
       const isOdd = i % 2 !== 0;
       const rowStyle = isOdd ? "rowOdd" : "rowEven";
+      const currStyle = isOdd ? "currencyOdd" : "currency";
       return `<Row ss:Height="26">
-        <Cell ss:StyleID="${rowStyle}"><Data ss:Type="String">${esc(name)}</Data></Cell>
-        <Cell ss:StyleID="numBig"><Data ss:Type="Number">${v.retiradas}</Data></Cell>
-        <Cell ss:StyleID="numGreen"><Data ss:Type="Number">${v.devolucoes}</Data></Cell>
-        <Cell ss:StyleID="numSaldo"><Data ss:Type="Number">${v.retiradas - v.devolucoes}</Data></Cell>
+        <Cell ss:StyleID="${rowStyle}"><Data ss:Type="String">${esc(row.productName)}</Data></Cell>
+        <Cell ss:StyleID="numBig"><Data ss:Type="Number">${row.ret}</Data></Cell>
+        <Cell ss:StyleID="numGreen"><Data ss:Type="Number">${row.dev}</Data></Cell>
+        <Cell ss:StyleID="${currStyle}"><Data ss:Type="Number">${row.price}</Data></Cell>
+        <Cell ss:StyleID="${currStyle}"><Data ss:Type="Number">${row.totalValue}</Data></Cell>
+        <Cell ss:StyleID="${rowStyle}"><Data ss:Type="String">${row.avgMonthly.toFixed(1)} un/mês</Data></Cell>
       </Row>`;
     });
+    const totalRetiradas = productSummary.reduce((s, r) => s + r.ret, 0);
+    const totalDevolucoes = productSummary.reduce((s, r) => s + r.dev, 0);
 
     const now = new Date().toLocaleDateString("pt-BR");
 
@@ -228,31 +260,44 @@ export default function ReportExcelGenerator({ client, orders, monthLabel }) {
   <Worksheet ss:Name="Resumo por Produto">
     <Table ss:DefaultRowHeight="20" ss:DefaultColumnWidth="100">
       <Column ss:Width="220"/>
-      <Column ss:Width="140"/>
-      <Column ss:Width="140"/>
-      <Column ss:Width="140"/>
+      <Column ss:Width="110"/>
+      <Column ss:Width="110"/>
+      <Column ss:Width="130"/>
+      <Column ss:Width="130"/>
+      <Column ss:Width="130"/>
 
       <Row ss:Height="10"><Cell ss:StyleID="empty"><Data ss:Type="String"></Data></Cell></Row>
       <Row ss:Height="36">
-        <Cell ss:StyleID="title" ss:MergeAcross="3"><Data ss:Type="String">RESUMO POR PRODUTO — ${esc(client.name.toUpperCase())}</Data></Cell>
+        <Cell ss:StyleID="title" ss:MergeAcross="5"><Data ss:Type="String">RESUMO POR PRODUTO — ${esc(client.name.toUpperCase())}</Data></Cell>
       </Row>
       <Row ss:Height="24">
-        <Cell ss:StyleID="subtitle" ss:MergeAcross="3"><Data ss:Type="String">Mês de referência: ${esc(monthLabel)}   |   Gerado em: ${esc(now)}</Data></Cell>
+        <Cell ss:StyleID="subtitle" ss:MergeAcross="5"><Data ss:Type="String">Mês de referência: ${esc(monthLabel)}   |   Gerado em: ${esc(now)}</Data></Cell>
       </Row>
       <Row ss:Height="10"><Cell ss:StyleID="empty"><Data ss:Type="String"></Data></Cell></Row>
 
       <Row ss:Height="28">
         <Cell ss:StyleID="headerGreen"><Data ss:Type="String">PRODUTO</Data></Cell>
-        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">TOTAL RETIRADAS</Data></Cell>
-        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">TOTAL DEVOLUÇÕES</Data></Cell>
-        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">SALDO (RET. - DEV.)</Data></Cell>
+        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">RETIRADAS</Data></Cell>
+        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">DEVOLUÇÕES</Data></Cell>
+        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">VL. UNITÁRIO</Data></Cell>
+        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">VL. TOTAL</Data></Cell>
+        <Cell ss:StyleID="headerGreen"><Data ss:Type="String">MÉDIA MENSAL</Data></Cell>
       </Row>
 
       ${summaryRows.join("\n      ")}
 
+      <Row ss:Height="30">
+        <Cell ss:StyleID="totalLabel"><Data ss:Type="String">TOTAL DO MÊS</Data></Cell>
+        <Cell ss:StyleID="totalNum"><Data ss:Type="Number">${totalRetiradas}</Data></Cell>
+        <Cell ss:StyleID="totalNum"><Data ss:Type="Number">${totalDevolucoes}</Data></Cell>
+        <Cell ss:StyleID="totalEmpty"><Data ss:Type="String"></Data></Cell>
+        <Cell ss:StyleID="totalCurrency"><Data ss:Type="Number">${grandTotal}</Data></Cell>
+        <Cell ss:StyleID="totalEmpty"><Data ss:Type="String"></Data></Cell>
+      </Row>
+
       <Row ss:Height="10"><Cell ss:StyleID="empty"><Data ss:Type="String"></Data></Cell></Row>
       <Row ss:Height="18">
-        <Cell ss:StyleID="footer" ss:MergeAcross="3"><Data ss:Type="String">ADIFER Ferramentas — Relatório gerado automaticamente em ${esc(now)}</Data></Cell>
+        <Cell ss:StyleID="footer" ss:MergeAcross="5"><Data ss:Type="String">ADIFER Ferramentas — Relatório gerado automaticamente em ${esc(now)}</Data></Cell>
       </Row>
     </Table>
   </Worksheet>

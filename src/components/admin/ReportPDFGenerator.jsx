@@ -63,7 +63,7 @@ function drawBorderLines(doc, cols, startY, rowCount, marginX, rowH) {
   }
 }
 
-export default function ReportPDFGenerator({ client, orders, monthLabel }) {
+export default function ReportPDFGenerator({ client, orders, monthLabel, productSummary = [], grandTotal = 0 }) {
   const [loading, setLoading] = useState(false);
 
   const generate = () => {
@@ -160,25 +160,8 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
         curY += 12;
       }
 
-      // ── Section 2: Totais ──────────────────────────────────
-      const retiradaMap = {};
-      const devolucaoMap = {};
-      orders
-        .filter((o) => o.status !== "cancelado")
-        .forEach((o) => {
-          const key = o.product_name || "Desconhecido";
-          if (o.type === "retirada") {
-            retiradaMap[key] = (retiradaMap[key] || 0) + (o.quantity || 0);
-          } else {
-            devolucaoMap[key] = (devolucaoMap[key] || 0) + (o.quantity || 0);
-          }
-        });
-      const allProducts = [...new Set([...Object.keys(retiradaMap), ...Object.keys(devolucaoMap)])];
-      const totalRows = allProducts
-        .map((p) => [p, retiradaMap[p] || 0, devolucaoMap[p] || 0])
-        .sort((a, b) => b[1] - a[1]);
-
-      const needSpace = 12 + 7 + totalRows.length * rowH + 10;
+      // ── Section 2: Resumo por produto ─────────────────────
+      const needSpace = 12 + 7 + productSummary.length * rowH + 18;
       if (curY + needSpace > pageH - marginBottom) {
         addFooter(pageNum, "?");
         doc.addPage();
@@ -193,33 +176,36 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(30, 64, 175);
-      doc.text("2. Resumo de Movimentações por Item", marginX, curY);
+      doc.text("2. Resumo por Produto", marginX, curY);
       curY += 5;
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(80, 80, 80);
-      doc.text("Retiradas: total de itens retirados do estoque no período (pedidos confirmados).", marginX, curY);
-      curY += 4.5;
-      doc.text("Devoluções: total de itens devolvidos ao estoque no período (pedidos confirmados).", marginX, curY);
+      doc.text("Consumo líquido = Retiradas − Devoluções. Média mensal calculada sobre todos os meses com dados.", marginX, curY);
       curY += 5;
 
       const totalCols = [
-        { label: "PRODUTO", w: 110, dark: true },
-        { label: "RETIRADA", w: 36, dark: true },
-        { label: "DEVOLUÇÃO", w: 36, dark: true },
+        { label: "PRODUTO", w: 64 },
+        { label: "RETIRADAS", w: 22 },
+        { label: "DEVOLUÇÕES", w: 24 },
+        { label: "VL. UNITÁRIO", w: 28 },
+        { label: "VL. TOTAL", w: 28 },
+        { label: "MÉD. MENSAL", w: 26 },
       ];
 
       drawTableHeader(doc, totalCols, curY, marginX);
       curY += 7;
 
-      if (totalRows.length === 0) {
+      const fmtBRL = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+      if (productSummary.length === 0) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(120);
         doc.text("Nenhuma retirada confirmada neste período.", marginX, curY + 4);
+        curY += 10;
       } else {
-        totalRows.forEach(([product, ret, dev], i) => {
-          const qty = ret; // keep variable for page-break check
+        productSummary.forEach((row, i) => {
           if (curY + rowH > pageH - marginBottom) {
             addFooter(pageNum, "?");
             doc.addPage();
@@ -230,9 +216,40 @@ export default function ReportPDFGenerator({ client, orders, monthLabel }) {
             drawTableHeader(doc, totalCols, curY, marginX);
             curY += 7;
           }
-          drawTableRow(doc, totalCols, [product, String(ret), String(dev)], curY, marginX, i % 2 === 1);
+          drawTableRow(doc, totalCols, [
+            row.productName,
+            String(row.ret),
+            String(row.dev),
+            row.price > 0 ? fmtBRL(row.price) : "—",
+            row.price > 0 ? fmtBRL(row.totalValue) : "—",
+            row.avgMonthly.toFixed(1) + " un/mês",
+          ], curY, marginX, i % 2 === 1);
           curY += rowH;
         });
+
+        // Linha de total
+        if (curY + rowH + 2 > pageH - marginBottom) {
+          addFooter(pageNum, "?");
+          doc.addPage();
+          pageNum++;
+          pages.push(pageNum);
+          addHeader();
+          curY = 35;
+        }
+        curY += 2;
+        doc.setFillColor(30, 64, 175);
+        const totalW = totalCols.reduce((s, c) => s + c.w, 0);
+        doc.rect(marginX, curY, totalW, 7, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text("TOTAL DO MÊS", marginX + 2, curY + 5);
+        const totalRetX = marginX + totalCols[0].w;
+        doc.text(String(productSummary.reduce((s, r) => s + r.ret, 0)), totalRetX + 2, curY + 5);
+        const totalValX = marginX + totalCols[0].w + totalCols[1].w + totalCols[2].w + totalCols[3].w;
+        doc.text(fmtBRL(grandTotal), totalValX + 2, curY + 5);
+        doc.setTextColor(30, 30, 30);
+        curY += 9;
       }
 
       // Fix footer page count
