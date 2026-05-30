@@ -50,6 +50,10 @@
     "representative_name": {
       "type": "string",
       "description": "Nome do representante respons\u00e1vel"
+    },
+    "contract_url": {
+      "type": "string",
+      "description": "URL do contrato anexado para este cliente"
     }
   },
   "required": [

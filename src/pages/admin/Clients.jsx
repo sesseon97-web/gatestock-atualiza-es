@@ -1,20 +1,19 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Users, Pencil, Trash2, Wifi, Package, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Users, Pencil, Trash2, Wifi, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ClientForm from "@/components/admin/ClientForm";
-import ClientAllocations from "@/components/admin/ClientAllocations";
-import ClientRepresentative from "@/components/admin/ClientRepresentative";
 import { toast } from "sonner";
 
 export default function Clients() {
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
-  const [expandedClient, setExpandedClient] = useState(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -100,12 +99,11 @@ export default function Clients() {
                     </Badge>
                   )}
                   <Button
-                    variant="ghost" size="sm"
+                    size="sm"
                     className="gap-1 text-xs rounded-lg"
-                    onClick={() => setExpandedClient(expandedClient === client.id ? null : client.id)}
+                    onClick={() => navigate(`/clientes/${client.id}`)}
                   >
-                    <Package className="w-3.5 h-3.5" /> Produtos
-                    {expandedClient === client.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    <ExternalLink className="w-3.5 h-3.5" /> Abrir Cliente
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(client)}>
                     <Pencil className="w-3.5 h-3.5" />
@@ -118,14 +116,6 @@ export default function Clients() {
                   </Button>
                 </div>
               </div>
-              {expandedClient === client.id && (
-                <div className="border-t border-border bg-muted/30 p-5 space-y-6">
-                  <ClientRepresentative client={client} />
-                  <div className="border-t border-border pt-4">
-                    <ClientAllocations client={client} />
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
