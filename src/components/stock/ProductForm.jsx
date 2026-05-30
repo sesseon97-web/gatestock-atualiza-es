@@ -19,6 +19,7 @@ export default function ProductForm({ product, onClose }) {
     manufacturer_name: product?.manufacturer_name || "",
     manufacturer_code: product?.manufacturer_code || "",
     image_url: product?.image_url || "",
+    quantity: product?.quantity ?? 0,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
@@ -93,6 +94,18 @@ export default function ProductForm({ product, onClose }) {
           </Select>
         </div>
       </div>
+      <div className="space-y-2">
+        <Label>Quantidade em Depósito</Label>
+        <Input
+          type="number"
+          min="0"
+          value={form.quantity}
+          onChange={(e) => update("quantity", Number(e.target.value))}
+          placeholder="0"
+          className="rounded-xl"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Nome do Fabricante</Label>
