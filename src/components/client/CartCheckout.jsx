@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Minus, ShoppingCart, ArrowLeft, Trash2, CheckCircle } from "lucide-react";
+import { Package, Plus, Minus, ShoppingCart, ArrowLeft, Trash2, CheckCircle, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,7 +50,7 @@ function ProductSelector({ enriched, cart, onUpdateCart, onNext, onCancel, emplo
 
       <p className="text-sm text-muted-foreground font-medium">Selecione os produtos e quantidades:</p>
 
-      <div className="space-y-3 max-h-[45vh] overflow-y-auto pr-1">
+      <div className="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1">
         {visible.map((alloc) => {
           const stock = alloc.product?.quantity || 0;
           const available = Math.min(alloc.allocated_quantity, stock);
@@ -60,45 +60,59 @@ function ProductSelector({ enriched, cart, onUpdateCart, onNext, onCancel, emplo
           return (
             <div
               key={alloc.id}
-              className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                outOfStock ? "opacity-50 bg-muted/30 border-border" : qty > 0 ? "border-primary bg-primary/5" : "bg-card border-border"
+              className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all ${
+                outOfStock ? "opacity-50 bg-muted/30 border-border" : qty > 0 ? "border-primary ring-2 ring-primary/30 bg-primary/5" : "bg-card border-border"
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Package className="w-5 h-5 text-primary" />
+              {/* Foto */}
+              <div className="w-full h-32 bg-muted flex items-center justify-center overflow-hidden">
+                {alloc.product?.image_url ? (
+                  <img src={alloc.product.image_url} alt={alloc.product_name} className="w-full h-full object-cover" />
+                ) : (
+                  <Package className="w-10 h-10 text-muted-foreground/40" />
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{alloc.product_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Disponível: <span className="font-medium text-foreground">{available}</span> {alloc.product?.unit || "un."}
-                </p>
-              </div>
-              {!outOfStock && (
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 rounded-lg"
-                    disabled={qty <= 0}
-                    onClick={() => onUpdateCart(alloc.product_id, Math.max(0, qty - 1))}
-                  >
-                    {qty <= 1 ? <Trash2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                  </Button>
-                  <span className="w-6 text-center text-sm font-bold">{qty}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 rounded-lg"
-                    disabled={qty >= available}
-                    onClick={() => onUpdateCart(alloc.product_id, Math.min(available, qty + 1))}
-                  >
-                    <Plus className="w-3 h-3" />
-                  </Button>
+
+              {/* Badge qtd selecionada */}
+              {qty > 0 && (
+                <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow">
+                  {qty}
                 </div>
               )}
-              {outOfStock && (
-                <Badge variant="secondary" className="text-xs text-destructive bg-destructive/10 flex-shrink-0">Sem estoque</Badge>
-              )}
+
+              {/* Info */}
+              <div className="p-3 flex flex-col gap-2 flex-1">
+                <p className="text-sm font-semibold leading-tight line-clamp-2">{alloc.product_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Disp.: <span className="font-medium text-foreground">{available}</span> {alloc.product?.unit || "un."}
+                </p>
+
+                {outOfStock ? (
+                  <Badge variant="secondary" className="text-xs text-destructive bg-destructive/10 w-fit">Sem estoque</Badge>
+                ) : (
+                  <div className="flex items-center justify-between gap-1 mt-auto">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      disabled={qty <= 0}
+                      onClick={() => onUpdateCart(alloc.product_id, Math.max(0, qty - 1))}
+                    >
+                      {qty <= 1 ? <Trash2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                    </Button>
+                    <span className="text-sm font-bold w-6 text-center">{qty}</span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg"
+                      disabled={qty >= available}
+                      onClick={() => onUpdateCart(alloc.product_id, Math.min(available, qty + 1))}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
