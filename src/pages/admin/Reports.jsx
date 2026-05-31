@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import ReportPDFGenerator from "@/components/admin/ReportPDFGenerator";
 import ReportExcelGenerator from "@/components/admin/ReportExcelGenerator";
+import SendReportEmail from "@/components/admin/SendReportEmail";
 
 // Gera lista dos últimos 12 meses
 function getMonthOptions() {
@@ -189,6 +190,13 @@ export default function Reports() {
               grandTotal={grandTotal}
             />
             <ReportExcelGenerator
+              client={selectedClientObj}
+              orders={filtered}
+              monthLabel={currentMonthLabel}
+              productSummary={productSummary}
+              grandTotal={grandTotal}
+            />
+            <SendReportEmail
               client={selectedClientObj}
               orders={filtered}
               monthLabel={currentMonthLabel}

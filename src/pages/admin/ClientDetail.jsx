@@ -231,6 +231,7 @@ export default function ClientDetail() {
             </h3>
             <InfoRow label="Nome" value={client.name} />
             <InfoRow label="E-mail" value={client.email} />
+            <InfoRow label="Email Relatórios" value={client.report_email} />
             <InfoRow label="Empresa" value={client.company} />
             <InfoRow label="Usuário App" value={client.app_username} />
             <InfoRow label="Observações" value={client.notes} />

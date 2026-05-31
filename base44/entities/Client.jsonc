@@ -10,6 +10,10 @@
       "type": "string",
       "description": "Email de login do cliente (deve ser o mesmo email cadastrado como usu\u00e1rio)"
     },
+    "report_email": {
+      "type": "string",
+      "description": "Email para envio de relat\u00f3rios (pode ser diferente do email de login)"
+    },
     "app_username": {
       "type": "string",
       "description": "Usu\u00e1rio para o segundo login interno do app"

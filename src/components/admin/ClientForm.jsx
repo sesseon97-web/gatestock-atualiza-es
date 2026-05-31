@@ -14,6 +14,7 @@ export default function ClientForm({ client, onClose }) {
   const [form, setForm] = useState({
     name: client?.name || "",
     email: client?.email || "",
+    report_email: client?.report_email || "",
     password: "",
     app_username: client?.app_username || "",
     app_password: client?.app_password || "",
@@ -203,6 +204,20 @@ export default function ClientForm({ client, onClose }) {
             ✓ {fullUrl}
           </p>
         )}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="flex items-center gap-1.5">
+          Email para Relatórios
+          <span className="text-xs text-muted-foreground font-normal">(para envio do Excel mensal)</span>
+        </Label>
+        <Input
+          type="email"
+          value={form.report_email}
+          onChange={(e) => set("report_email", e.target.value)}
+          placeholder="relatorios@empresa.com"
+          className="rounded-xl"
+        />
       </div>
 
       <div className="space-y-1.5">
