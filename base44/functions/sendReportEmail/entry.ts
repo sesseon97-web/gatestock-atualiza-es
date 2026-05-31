@@ -14,10 +14,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'toEmail e xmlContent são obrigatórios' }, { status: 400 });
     }
 
-    // Faz upload do arquivo Excel para storage público e obtém URL permanente
-    const blob = new Blob([xmlContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const file = new File([blob], fileName, { type: 'application/vnd.ms-excel' });
-    const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+    if (!RESEND_API_KEY) {
+      return Response.json({ error: 'RESEND_API_KEY não configurada' }, { status: 500 });
+    }
+
+    // Converte o conteúdo XML/Excel para base64
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(xmlContent);
+    const base64Content = btoa(String.fromCharCode(...bytes));
 
     const htmlBody = `
 <div style="font-family: Calibri, Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -30,14 +35,8 @@ Deno.serve(async (req) => {
       Olá, <strong>${clientName}</strong>!
     </p>
     <p style="font-size: 14px; color: #6B7280;">
-      Segue o relatório de pedidos referente ao mês de <strong style="color: #1E3A5F;">${monthLabel}</strong>.
+      Segue em anexo o relatório de pedidos referente ao mês de <strong style="color: #1E3A5F;">${monthLabel}</strong>.
     </p>
-    <div style="margin: 24px 0; text-align: center;">
-      <a href="${file_url}" download="${fileName}"
-        style="display: inline-block; background: #1E3A5F; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: bold;">
-        📥 Baixar Relatório Excel
-      </a>
-    </div>
     <div style="margin: 16px 0; padding: 16px; background: #EEF2FB; border-radius: 8px; border-left: 4px solid #1E3A5F;">
       <p style="margin: 0; font-size: 13px; color: #1E3A5F;">
         <strong>📁 Arquivo:</strong> ${fileName}<br/>
@@ -52,13 +51,35 @@ Deno.serve(async (req) => {
 </div>
     `.trim();
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: toEmail,
+    const resendPayload = {
+      from: 'ADIFER Ferramentas <onboarding@resend.dev>',
+      to: [toEmail],
       subject: `Relatório de Pedidos — ${clientName} — ${monthLabel}`,
-      body: htmlBody,
+      html: htmlBody,
+      attachments: [
+        {
+          filename: fileName,
+          content: base64Content,
+        }
+      ]
+    };
+
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(resendPayload),
     });
 
-    return Response.json({ success: true, file_url });
+    const resendData = await resendRes.json();
+
+    if (!resendRes.ok) {
+      return Response.json({ error: resendData.message || 'Erro ao enviar email' }, { status: 500 });
+    }
+
+    return Response.json({ success: true, id: resendData.id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
