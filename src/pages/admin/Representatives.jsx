@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { UserCheck, ChevronDown, ChevronUp, AlertTriangle, Package, Building2 } from "lucide-react";
+import { UserCheck, ChevronDown, ChevronUp, AlertTriangle, Package, Building2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import AssignClientsModal from "@/components/admin/AssignClientsModal";
 
 export default function Representatives() {
   const [expandedRep, setExpandedRep] = useState(null);
   const [expandedClient, setExpandedClient] = useState(null);
+  const [assignModal, setAssignModal] = useState(null); // { id, name }
 
   const { data: clients = [], isLoading: loadingClients } = useQuery({
     queryKey: ["clients"],
@@ -125,8 +128,16 @@ export default function Representatives() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-muted-foreground">
-                    {isRepExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl gap-1 text-xs"
+                      onClick={(e) => { e.stopPropagation(); setAssignModal({ id: rep.id, name: rep.name }); }}
+                    >
+                      <Users className="w-3.5 h-3.5" /> Gerenciar Clientes
+                    </Button>
+                    {isRepExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                   </div>
                 </div>
 
@@ -229,6 +240,14 @@ export default function Representatives() {
             );
           })}
         </div>
+      )}
+
+      {assignModal && (
+        <AssignClientsModal
+          rep={assignModal}
+          open={!!assignModal}
+          onClose={() => setAssignModal(null)}
+        />
       )}
     </div>
   );
