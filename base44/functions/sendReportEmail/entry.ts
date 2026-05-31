@@ -14,23 +14,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'toEmail e xmlContent são obrigatórios' }, { status: 400 });
     }
 
-    const body = `
-Olá,
+    // Faz upload do arquivo Excel para storage público e obtém URL permanente
+    const blob = new Blob([xmlContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const file = new File([blob], fileName, { type: 'application/vnd.ms-excel' });
+    const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file });
 
-Segue em anexo o relatório de pedidos de <strong>${clientName}</strong> referente ao mês de <strong>${monthLabel}</strong>.
-
-O arquivo Excel está disponível para download no link abaixo:
-
-<a href="data:application/vnd.ms-excel;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(xmlContent)))}" download="${fileName}">${fileName}</a>
-
-Se o link acima não funcionar, peça ao administrador para gerar e enviar novamente.
-
-Atenciosamente,<br/>
-ADIFER Ferramentas
-    `.trim();
-
-    // Como SendEmail não suporta anexos binários, vamos enviar uma versão formatada como HTML
-    // com os dados resumidos e instruindo o usuário a baixar pelo sistema.
     const htmlBody = `
 <div style="font-family: Calibri, Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background: #1E3A5F; color: white; padding: 20px 28px; border-radius: 8px 8px 0 0;">
@@ -42,12 +30,15 @@ ADIFER Ferramentas
       Olá, <strong>${clientName}</strong>!
     </p>
     <p style="font-size: 14px; color: #6B7280;">
-      Seu relatório de pedidos referente ao mês de <strong style="color: #1E3A5F;">${monthLabel}</strong> foi gerado e está disponível.
+      Segue o relatório de pedidos referente ao mês de <strong style="color: #1E3A5F;">${monthLabel}</strong>.
     </p>
-    <p style="font-size: 14px; color: #6B7280;">
-      Acesse o sistema ADIFER para baixar o arquivo Excel completo com todos os detalhes dos pedidos e resumo financeiro.
-    </p>
-    <div style="margin: 24px 0; padding: 16px; background: #EEF2FB; border-radius: 8px; border-left: 4px solid #1E3A5F;">
+    <div style="margin: 24px 0; text-align: center;">
+      <a href="${file_url}" download="${fileName}"
+        style="display: inline-block; background: #1E3A5F; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: bold;">
+        📥 Baixar Relatório Excel
+      </a>
+    </div>
+    <div style="margin: 16px 0; padding: 16px; background: #EEF2FB; border-radius: 8px; border-left: 4px solid #1E3A5F;">
       <p style="margin: 0; font-size: 13px; color: #1E3A5F;">
         <strong>📁 Arquivo:</strong> ${fileName}<br/>
         <strong>📅 Mês de referência:</strong> ${monthLabel}<br/>
@@ -61,13 +52,13 @@ ADIFER Ferramentas
 </div>
     `.trim();
 
-    await base44.integrations.Core.SendEmail({
+    await base44.asServiceRole.integrations.Core.SendEmail({
       to: toEmail,
       subject: `Relatório de Pedidos — ${clientName} — ${monthLabel}`,
       body: htmlBody,
     });
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, file_url });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
