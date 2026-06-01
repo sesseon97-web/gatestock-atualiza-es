@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import ClientSecondLogin from "@/pages/client/ClientSecondLogin";
 
-const SESSION_KEY = "ksc_client_session";
+const SESSION_KEY = "gatestock_client_session";
 
 // Contexto para compartilhar o cliente autenticado no segundo login
 export const ClientSessionContext = createContext(null);
@@ -73,11 +73,7 @@ export default function ClientLayout() {
         {/* Top bar */}
         <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 py-3 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
-            <img
-              src="https://media.base44.com/images/public/6a14a4e0cde3835f676a164e/4e5ad93a6_ksc.PNG"
-              alt="KSC"
-              className="h-7 object-contain"
-            />
+            <span className="text-base font-bold text-sidebar-foreground">GateStock</span>
             <span className="text-sm font-semibold text-sidebar-foreground">{clientSession.name}</span>
           </div>
           <div className="flex items-center gap-3">

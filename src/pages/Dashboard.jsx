@@ -66,7 +66,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Painel</h1>
-          <p className="text-muted-foreground mt-1">Bem-vindo ao controle de estoque KSC</p>
+          <p className="text-muted-foreground mt-1">Bem-vindo ao controle de estoque</p>
         </div>
 
       </div>
