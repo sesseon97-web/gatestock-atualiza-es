@@ -1,13 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Shield, Wifi, WifiOff, Plus, Trash2, Clock } from "lucide-react";
+import { Shield, Wifi, WifiOff, Plus, Trash2, Clock, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { format } from "date-fns";
+import { useAuth } from "@/lib/AuthContext";
+
+const DEV_EMAIL = "sesseon97@gmail.com";
 
 export default function Armarios() {
+  const { user } = useAuth();
+  const isDev = user?.email === DEV_EMAIL;
   const queryClient = useQueryClient();
   const [novoId, setNovoId] = useState("");
   const [novoNome, setNovoNome] = useState("");
@@ -67,28 +72,35 @@ export default function Armarios() {
         </div>
       </div>
 
-      {/* Adicionar armário */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-        <h2 className="font-semibold text-foreground">Adicionar Armário</h2>
-        <div className="flex gap-3 flex-wrap">
-          <Input
-            placeholder="Identificador (ex: ARMARIO001)"
-            value={novoId}
-            onChange={(e) => setNovoId(e.target.value)}
-            className="max-w-xs"
-          />
-          <Input
-            placeholder="Nome amigável (opcional)"
-            value={novoNome}
-            onChange={(e) => setNovoNome(e.target.value)}
-            className="max-w-xs"
-          />
-          <Button onClick={handleCriar} disabled={!novoId.trim() || criarMutation.isPending}>
-            <Plus className="w-4 h-4" />
-            Adicionar
-          </Button>
+      {/* Adicionar armário — apenas desenvolvedor */}
+      {isDev ? (
+        <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+          <h2 className="font-semibold text-foreground">Adicionar Armário</h2>
+          <div className="flex gap-3 flex-wrap">
+            <Input
+              placeholder="Identificador (ex: ARMARIO001)"
+              value={novoId}
+              onChange={(e) => setNovoId(e.target.value)}
+              className="max-w-xs"
+            />
+            <Input
+              placeholder="Nome amigável (opcional)"
+              value={novoNome}
+              onChange={(e) => setNovoNome(e.target.value)}
+              className="max-w-xs"
+            />
+            <Button onClick={handleCriar} disabled={!novoId.trim() || criarMutation.isPending}>
+              <Plus className="w-4 h-4" />
+              Adicionar
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center gap-3 bg-muted border border-border rounded-xl px-5 py-4">
+          <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <p className="text-sm text-muted-foreground">Apenas o desenvolvedor pode adicionar ou remover armários.</p>
+        </div>
+      )}
 
       {/* Lista de armários */}
       {isLoading ? (
@@ -123,15 +135,17 @@ export default function Armarios() {
                     {format(new Date(armario.ultima_comunicacao), "dd/MM/yyyy HH:mm:ss")}
                   </p>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full"
-                  onClick={() => deletarMutation.mutate(armario.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Remover
-                </Button>
+                {isDev && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full"
+                    onClick={() => deletarMutation.mutate(armario.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Remover
+                  </Button>
+                )}
               </div>
             );
           })}
