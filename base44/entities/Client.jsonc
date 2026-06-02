@@ -26,17 +26,9 @@
       "type": "string",
       "description": "Empresa ou setor do cliente"
     },
-    "ip_address": {
+    "armario_id": {
       "type": "string",
-      "description": "Endere\u00e7o IP ou URL para acionar a porta/atuador do cliente"
-    },
-    "ip_port": {
-      "type": "string",
-      "description": "Porta do IP (ex: 8080)"
-    },
-    "ip_endpoint": {
-      "type": "string",
-      "description": "Endpoint do IP (ex: /open ou /trigger)"
+      "description": "Identificador do arm\u00e1rio alocado para este cliente (ex: ARMARIO001)"
     },
     "active": {
       "type": "boolean",

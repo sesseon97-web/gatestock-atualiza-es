@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Building2, Mail, Wifi, FileText, User, Package,
+  ArrowLeft, Building2, Mail, DoorOpen, FileText, User, Package,
   AlertTriangle, Upload, X, ExternalLink, Pencil, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -237,13 +237,13 @@ export default function ClientDetail() {
             <InfoRow label="Observações" value={client.notes} />
           </div>
 
-          {/* Atuador */}
-          {client.ip_address && (
+          {/* Armário */}
+          {client.armario_id && (
             <div className="bg-card rounded-2xl border border-border p-5 space-y-1">
               <h3 className="font-semibold text-foreground flex items-center gap-2 mb-3">
-                <Wifi className="w-4 h-4 text-primary" /> Atuador (Porta)
+                <DoorOpen className="w-4 h-4 text-primary" /> Armário Alocado
               </h3>
-              <InfoRow label="URL" value={client.ip_address} />
+              <InfoRow label="Identificador" value={client.armario_id} />
             </div>
           )}
 

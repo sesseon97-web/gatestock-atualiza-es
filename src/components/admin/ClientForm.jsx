@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Wifi, Eye, EyeOff, UserPlus, KeyRound } from "lucide-react";
+import { DoorOpen, Eye, EyeOff, UserPlus, KeyRound } from "lucide-react";
 
 export default function ClientForm({ client, onClose }) {
   const queryClient = useQueryClient();
@@ -19,11 +20,14 @@ export default function ClientForm({ client, onClose }) {
     app_username: client?.app_username || "",
     app_password: client?.app_password || "",
     company: client?.company || "",
-    ip_address: client?.ip_address || "",
-    ip_port: client?.ip_port || "",
-    ip_endpoint: client?.ip_endpoint || "",
+    armario_id: client?.armario_id || "",
     active: client?.active ?? true,
     notes: client?.notes || "",
+  });
+
+  const { data: armarios = [] } = useQuery({
+    queryKey: ["armarios"],
+    queryFn: () => base44.entities.Armario.list(),
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showAppPassword, setShowAppPassword] = useState(false);
@@ -77,11 +81,6 @@ export default function ClientForm({ client, onClose }) {
     }
     mutation.mutate(form);
   };
-
-  // Monta URL: se ip_address já for URL completa, usa direto; senão combina os campos
-  const fullUrl = form.ip_address
-    ? (form.ip_address.startsWith("http") ? form.ip_address : `http://${form.ip_address}${form.ip_port ? `:${form.ip_port}` : ""}${form.ip_endpoint || ""}`)
-    : null;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
@@ -184,26 +183,27 @@ export default function ClientForm({ client, onClose }) {
 
       <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/30">
         <div className="flex items-center gap-2 mb-1">
-          <Wifi className="w-4 h-4 text-primary" />
-          <span className="font-medium text-sm">Configuração do Atuador (Porta)</span>
+          <DoorOpen className="w-4 h-4 text-primary" />
+          <span className="font-medium text-sm">Armário Alocado</span>
         </div>
         <div className="space-y-1.5">
-          <Label>URL completa do atuador</Label>
-          <Input
-            value={form.ip_address}
-            onChange={(e) => set("ip_address", e.target.value)}
-            placeholder="http://192.168.1.10/abrir"
-            className="rounded-xl font-mono text-sm"
-          />
+          <Label>Armário</Label>
+          <Select value={form.armario_id} onValueChange={(v) => set("armario_id", v)}>
+            <SelectTrigger className="rounded-xl">
+              <SelectValue placeholder="Selecione um armário..." />
+            </SelectTrigger>
+            <SelectContent>
+              {armarios.map((a) => (
+                <SelectItem key={a.id} value={a.identificador}>
+                  {a.nome ? `${a.nome} (${a.identificador})` : a.identificador}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <p className="text-xs text-muted-foreground">
-            Cole a URL completa que aciona a porta. Ex: <span className="font-mono">http://192.168.16.207/abrir</span>
+            Selecione o armário físico alocado para este cliente.
           </p>
         </div>
-        {fullUrl && (
-          <p className="text-xs text-primary font-mono bg-primary/5 px-3 py-2 rounded-lg">
-            ✓ {fullUrl}
-          </p>
-        )}
       </div>
 
       <div className="space-y-1.5">
