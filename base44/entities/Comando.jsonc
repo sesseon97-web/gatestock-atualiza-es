@@ -1,0 +1,26 @@
+{
+  "name": "Comando",
+  "type": "object",
+  "properties": {
+    "armario_id": {
+      "type": "string",
+      "description": "Identificador do arm\u00e1rio (ex: ARMARIO001)"
+    },
+    "comando": {
+      "type": "string",
+      "enum": [
+        "ABRIR"
+      ],
+      "description": "Tipo do comando"
+    },
+    "executado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o comando j\u00e1 foi executado pelo ESP32"
+    }
+  },
+  "required": [
+    "armario_id",
+    "comando"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "Armario",
+  "type": "object",
+  "properties": {
+    "identificador": {
+      "type": "string",
+      "description": "Identificador \u00fanico do arm\u00e1rio (ex: ARMARIO001)"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome amig\u00e1vel do arm\u00e1rio"
+    },
+    "online": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o arm\u00e1rio est\u00e1 online"
+    },
+    "ultima_comunicacao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora da \u00faltima comunica\u00e7\u00e3o do ESP32"
+    },
+    "versao": {
+      "type": "string",
+      "description": "Vers\u00e3o do firmware do ESP32"
+    }
+  },
+  "required": [
+    "identificador"
+  ]
+}
