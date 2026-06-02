@@ -126,6 +126,7 @@ export default function Armarios() {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{armario.nome}</p>
+                <p className="text-xs font-mono bg-muted text-muted-foreground rounded px-2 py-1 select-all">ID: {armario.id}</p>
                 {armario.versao && (
                   <p className="text-xs text-muted-foreground">Firmware: v{armario.versao}</p>
                 )}
