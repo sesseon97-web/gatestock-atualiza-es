@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Package, ClipboardList, X, Users, LogOut, BarChart2, Warehouse, UserCheck } from "lucide-react";
+import { LayoutDashboard, Package, ClipboardList, X, Users, LogOut, BarChart2, Warehouse, UserCheck, DoorOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 
@@ -11,6 +11,7 @@ const navItems = [
   { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
   { path: "/estoque", label: "Estoque", icon: Warehouse },
   { path: "/relatorios", label: "Relatórios", icon: BarChart2 },
+  { path: "/armarios", label: "Armários", icon: DoorOpen },
 ];
 
 export default function Sidebar({ open, onClose }) {

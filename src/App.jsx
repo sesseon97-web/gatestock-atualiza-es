@@ -26,6 +26,7 @@ import Stock from '@/pages/admin/Stock';
 import Representatives from '@/pages/admin/Representatives';
 import RepresentativeDashboard from '@/pages/representative/RepresentativeDashboard';
 import ClientDetail from '@/pages/admin/ClientDetail';
+import Armarios from '@/pages/admin/Armarios';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -71,6 +72,7 @@ const AuthenticatedApp = () => {
             <Route path="/estoque" element={<Stock />} />
             <Route path="/representantes" element={<Representatives />} />
             <Route path="/clientes/:id" element={<ClientDetail />} />
+            <Route path="/armarios" element={<Armarios />} />
           </Route>
         ) : isRepresentante ? (
           <Route path="/" element={<RepresentativeDashboard />} />
