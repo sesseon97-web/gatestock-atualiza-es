@@ -35,7 +35,14 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
 
-    const armarioId = url.searchParams.get("armario");
+    // Aceita armario via query string (GET do ESP32) ou via body JSON (POST)
+    let armarioId = url.searchParams.get("armario");
+    if (!armarioId && req.method === "POST") {
+      try {
+        const body = await req.json();
+        armarioId = body.armario;
+      } catch (_) {}
+    }
 
     if (!armarioId) {
       return Response.json(
