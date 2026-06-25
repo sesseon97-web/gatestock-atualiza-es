@@ -7,8 +7,19 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     const url = new URL(req.url);
-    const clientId = url.searchParams.get("client_id");
-    const syncKey = url.searchParams.get("sync_key");
+    let clientId = url.searchParams.get("client_id");
+    let syncKey = url.searchParams.get("sync_key");
+
+    // Permite também enviar os parâmetros via corpo JSON (POST/PUT)
+    if (!clientId || !syncKey) {
+      try {
+        const body = await req.json();
+        if (!clientId) clientId = body.client_id;
+        if (!syncKey) syncKey = body.sync_key;
+      } catch (e) {
+        // corpo não é JSON ou está vazio — segue com os parâmetros da URL
+      }
+    }
 
     if (syncKey !== SYNC_KEY) {
       return Response.json(
@@ -24,25 +35,30 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Cliente (pega o registro do próprio cliente)
     const clientes = await base44.asServiceRole.entities.Client.filter({
       id: clientId
     });
 
-    const armarios = await base44.asServiceRole.entities.Armario.filter({
+    // Armários vinculados ao cliente (via campo armario_id)
+    const armarios = await base44.asServiceRole.entities.Armario.list();
+
+    // Usuários = funcionários (Employee) vinculados a este cliente
+    const usuarios = await base44.asServiceRole.entities.Employee.filter({
       client_id: clientId
     });
 
-    const usuarios = await base44.asServiceRole.entities.Usuario.filter({
+    // Cartões = UIDs de RFID (TagScan) vinculados a este cliente
+    const cartoes = await base44.asServiceRole.entities.TagScan.filter({
       client_id: clientId
     });
 
-    const cartoes = await base44.asServiceRole.entities.Cartao.filter({
+    // Produtos = alocações do cliente (ClientAllocation) + catálogo global (Product)
+    const produtosAlocados = await base44.asServiceRole.entities.ClientAllocation.filter({
       client_id: clientId
     });
 
-    const produtos = await base44.asServiceRole.entities.Produto.filter({
-      client_id: clientId
-    });
+    const produtos = await base44.asServiceRole.entities.Product.list();
 
     return Response.json({
       ok: true,
@@ -53,7 +69,8 @@ Deno.serve(async (req) => {
         armarios,
         usuarios,
         cartoes,
-        produtos
+        produtos,
+        produtosAlocados
       }
     });
 
