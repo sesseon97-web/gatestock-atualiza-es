@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ClientForm from "@/components/admin/ClientForm";
 import ClientAllocations from "@/components/admin/ClientAllocations";
 import ClientRepresentative from "@/components/admin/ClientRepresentative";
+import ClientEmployees from "@/components/admin/ClientEmployees";
 import { toast } from "sonner";
 
 function InfoRow({ label, value }) {
@@ -250,6 +251,11 @@ export default function ClientDetail() {
           {/* Representante */}
           <div className="bg-card rounded-2xl border border-border p-5">
             <ClientRepresentative client={client} />
+          </div>
+
+          {/* Funcionários ativos */}
+          <div className="bg-card rounded-2xl border border-border p-5">
+            <ClientEmployees client={client} />
           </div>
 
           {/* Contrato */}
