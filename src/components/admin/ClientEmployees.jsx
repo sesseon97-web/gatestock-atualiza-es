@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, User, KeyRound, Nfc } from "lucide-react";
+import { Users, User, KeyRound, Nfc, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import EmployeeEditDialog from "@/components/admin/EmployeeEditDialog";
 
 export default function ClientEmployees({ client }) {
+  const [editing, setEditing] = useState(null);
+
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["employees", client.id],
     queryFn: () => base44.entities.Employee.filter({ client_id: client.id }),
@@ -49,10 +54,24 @@ export default function ClientEmployees({ client }) {
                 </div>
               </div>
               <Badge className="bg-green-500/10 text-green-600 text-xs">Ativo</Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 flex-shrink-0"
+                onClick={() => setEditing(emp)}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
             </div>
           ))}
         </div>
       )}
+
+      <EmployeeEditDialog
+        employee={editing}
+        open={!!editing}
+        onOpenChange={(v) => { if (!v) setEditing(null); }}
+      />
     </div>
   );
 }
