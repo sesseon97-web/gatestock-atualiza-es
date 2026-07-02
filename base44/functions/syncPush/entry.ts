@@ -166,49 +166,51 @@ Deno.serve(async (req) => {
 
     for (const func of funcionarios) {
       try {
-        const nome = func.usuario_nome || func.nome || func.name || "";
+        const localId = func.local_id;
 
-        if (!nome) {
+        if (!localId) {
           erros.push({
             funcionario: func,
-            erro: "Funcionário sem usuario_nome"
+            erro: "Funcionário sem local_id"
           });
           continue;
         }
 
-        const base44Id = func.base44_id || func.id || null;
+        const nome = func.usuario_nome || func.nome || func.name || "";
+
+        if (!nome) {
+          erros.push({
+            local_id: localId,
+            erro: "Funcionário sem usuario_nome"
+          });
+          continue;
+        }
 
         const dados = {
           client_id,
           name: nome,
           pin_code: func.pin || func.pin_code || "",
           tag_uid: func.tag_uid || func.uid || "",
-          active: func.active ?? func.ativo ?? true
+          active: func.active ?? func.ativo ?? true,
+          local_id: String(localId)
         };
 
-        // Se tem ID do Base44, atualiza direto
-        if (base44Id) {
-          await Employee.update(base44Id, dados);
-          funcionariosSincronizados.push(base44Id);
-          continue;
-        }
-
-        // Sem ID — procura por nome + client_id
+        // Deduplica por client_id + local_id
         const existentes = await Employee.filter({
           client_id,
-          name: nome
+          local_id: String(localId)
         });
 
         if (existentes.length > 0) {
           await Employee.update(existentes[0].id, dados);
-          funcionariosSincronizados.push(existentes[0].id);
         } else {
-          const novo = await Employee.create(dados);
-          funcionariosSincronizados.push(novo.id);
+          await Employee.create(dados);
         }
+
+        funcionariosSincronizados.push(localId);
       } catch (error) {
         erros.push({
-          funcionario: func,
+          local_id: func.local_id || null,
           erro: error.message
         });
       }
