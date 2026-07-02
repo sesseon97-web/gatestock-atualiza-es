@@ -65,6 +65,44 @@
     "original_order_id": {
       "type": "string",
       "description": "ID do pedido de retirada original (para devolu\u00e7\u00f5es)"
+    },
+    "local_id": {
+      "type": "string",
+      "description": "ID local do pedido no servidor local (sincroniza\u00e7\u00e3o)"
+    },
+    "source": {
+      "type": "string",
+      "description": "Origem do pedido (ex: gatestock_local)"
+    },
+    "valor_unitario": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor unit\u00e1rio do produto"
+    },
+    "valor_total": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor total do pedido"
+    },
+    "cabinet_id": {
+      "type": "string",
+      "description": "ID do arm\u00e1rio no Base44"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Nome do funcion\u00e1rio (sincroniza\u00e7\u00e3o)"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID do funcion\u00e1rio no Base44 (sincroniza\u00e7\u00e3o)"
+    },
+    "local_created_date": {
+      "type": "string",
+      "description": "Data/hora local do pedido (sincroniza\u00e7\u00e3o)"
+    },
+    "original_local_order_id": {
+      "type": "string",
+      "description": "ID local do pedido original (para devolu\u00e7\u00f5es, sincroniza\u00e7\u00e3o)"
     }
   },
   "required": [
