@@ -94,8 +94,8 @@ Deno.serve(async (req) => {
 
           cabinet_id: pedido.armario_base44_id || null,
 
-          user_id: pedido.usuario_base44_id || null,
-          user_name: pedido.usuario_nome || "",
+          user_id: pedido.usuario_base44_id || pedido.user_id || "",
+          user_name: pedido.usuario_nome || pedido.user_name || "",
 
           product_id: pedido.produto_base44_id || null,
           product_name: pedido.produto_nome || "",
