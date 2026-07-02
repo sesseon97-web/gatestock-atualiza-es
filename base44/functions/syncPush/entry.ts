@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
 
     const { client_id, sync_key } = body;
     const pedidos = Array.isArray(body.pedidos) ? body.pedidos : [];
+    const funcionarios = Array.isArray(body.funcionarios) ? body.funcionarios : [];
 
     if (sync_key !== SYNC_KEY) {
       return Response.json(
@@ -53,6 +54,7 @@ Deno.serve(async (req) => {
       "ProdutosAlocados",
       "AllocatedProduct"
     ]);
+    const Employee = getEntity(base44, ["Employee", "Funcionario", "Funcionarios", "Usuario"]);
 
     const pedidosSincronizados = [];
     const erros = [];
@@ -157,10 +159,67 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ==========================
+    // SINCRONIZA FUNCIONÁRIOS
+    // ==========================
+    const funcionariosSincronizados = [];
+
+    for (const func of funcionarios) {
+      try {
+        const nome = func.usuario_nome || func.nome || func.name || "";
+
+        if (!nome) {
+          erros.push({
+            funcionario: func,
+            erro: "Funcionário sem usuario_nome"
+          });
+          continue;
+        }
+
+        const base44Id = func.base44_id || func.id || null;
+
+        const dados = {
+          client_id,
+          name: nome,
+          pin_code: func.pin || func.pin_code || "",
+          tag_uid: func.tag_uid || func.uid || "",
+          active: func.active ?? func.ativo ?? true
+        };
+
+        // Se tem ID do Base44, atualiza direto
+        if (base44Id) {
+          await Employee.update(base44Id, dados);
+          funcionariosSincronizados.push(base44Id);
+          continue;
+        }
+
+        // Sem ID — procura por nome + client_id
+        const existentes = await Employee.filter({
+          client_id,
+          name: nome
+        });
+
+        if (existentes.length > 0) {
+          await Employee.update(existentes[0].id, dados);
+          funcionariosSincronizados.push(existentes[0].id);
+        } else {
+          const novo = await Employee.create(dados);
+          funcionariosSincronizados.push(novo.id);
+        }
+      } catch (error) {
+        erros.push({
+          funcionario: func,
+          erro: error.message
+        });
+      }
+    }
+
     return Response.json({
       ok: erros.length === 0,
       pedidos_recebidos: pedidos.length,
       pedidos_sincronizados: pedidosSincronizados,
+      funcionarios_recebidos: funcionarios.length,
+      funcionarios_sincronizados: funcionariosSincronizados,
       erros,
       avisos
     });
